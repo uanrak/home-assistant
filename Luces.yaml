@@ -45,10 +45,11 @@ blueprint:
       selector:
         entity:
           domain: script
-          multiple: false
-          optional: true
 
 mode: restart
+
+variables:
+  script_configurado: "{{ script_encendido != '' }}"
 
 trigger:
   - platform: state
@@ -79,7 +80,7 @@ action:
           - choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ script_encendido != '' }}"
+                    value_template: "{{ script_configurado }}"
                 sequence:
                   - service: script.turn_on
                     target:
@@ -107,7 +108,7 @@ action:
           - choose:
               - conditions:
                   - condition: template
-                    value_template: "{{ script_encendido != '' }}"
+                    value_template: "{{ script_configurado }}"
                 sequence:
                   - service: script.turn_on
                     target:
