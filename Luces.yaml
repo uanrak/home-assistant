@@ -31,7 +31,7 @@ blueprint:
     tiempo_apagado:
       name: Tiempo de apagado
       description: "Tiempo en minutos antes de apagar las luces si no hay presencia. Si es 0, se apagarán inmediatamente."
-      default: 5
+      default: 1
       selector:
         number:
           min: 1
@@ -68,6 +68,9 @@ trigger:
 condition: []
 
 action:
+  - variables:
+      solo_noche_var: !input solo_noche
+
   - choose:
       - conditions:
           - condition: trigger
@@ -75,7 +78,7 @@ action:
           - condition: or
             conditions:
               - condition: template
-                value_template: "{{ not !input solo_noche }}"
+                value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
         sequence:
@@ -100,7 +103,7 @@ action:
           - condition: or
             conditions:
               - condition: template
-                value_template: "{{ not !input solo_noche }}"
+                value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
         sequence:
