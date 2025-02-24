@@ -1,16 +1,37 @@
 blueprint:
-  name: "Control de luces por presencia en un área"
-  description: "Enciende las luces si hay presencia en un área y las apaga si no hay movimiento por un tiempo determinado. También enciende las luces si una puerta se abre y el área está desocupada."
+  name: "Control de luces por sensores de presencia y puertas"
+  description: "Enciende luces si algún sensor de presencia está ocupado. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia."
   domain: automation
   input:
-    area:
-      name: Área
-      description: "Selecciona el área donde se aplicará la automatización."
+    sensores_presencia:
+      name: Sensores de presencia
+      description: "Selecciona los sensores de presencia a monitorear."
       selector:
-        area:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+          multiple: true
+
+    luces:
+      name: Luces
+      description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+    sensores_puerta:
+      name: Sensores de puerta
+      description: "Selecciona los sensores de puerta que activarán las luces."
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: door
+          multiple: true
+
     tiempo_apagado:
       name: Tiempo de apagado
-      description: "Tiempo en minutos antes de apagar las luces cuando no haya presencia."
+      description: "Tiempo en minutos antes de apagar las luces si no hay presencia."
       default: 5
       selector:
         number:
@@ -22,25 +43,19 @@ mode: restart
 
 trigger:
   - platform: state
-    entity_id: !input area
-    domain: binary_sensor
-    device_class: motion
+    entity_id: !input sensores_presencia
     to: "on"
     id: "presencia_detectada"
 
   - platform: state
-    entity_id: !input area
-    domain: binary_sensor
-    device_class: motion
+    entity_id: !input sensores_presencia
     to: "off"
     for:
       minutes: !input tiempo_apagado
     id: "sin_presencia"
 
   - platform: state
-    entity_id: !input area
-    domain: binary_sensor
-    device_class: door
+    entity_id: !input sensores_puerta
     to: "on"
     id: "puerta_abierta"
 
@@ -54,7 +69,7 @@ action:
         sequence:
           - service: light.turn_on
             target:
-              area_id: !input area
+              entity_id: !input luces
 
       - conditions:
           - condition: trigger
@@ -62,17 +77,15 @@ action:
         sequence:
           - service: light.turn_off
             target:
-              area_id: !input area
+              entity_id: !input luces
 
       - conditions:
           - condition: trigger
             id: "puerta_abierta"
           - condition: state
-            entity_id: !input area
-            domain: binary_sensor
-            device_class: motion
+            entity_id: !input sensores_presencia
             state: "off"
         sequence:
           - service: light.turn_on
             target:
-              area_id: !input area
+              entity_id: !input luces
