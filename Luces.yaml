@@ -30,13 +30,20 @@ blueprint:
 
     tiempo_apagado:
       name: Tiempo de apagado
-      description: "Tiempo en minutos antes de apagar las luces si no hay presencia."
+      description: "Tiempo en minutos antes de apagar las luces si no hay presencia. Si es 0, se apagarán inmediatamente."
       default: 5
       selector:
         number:
           min: 1
           max: 60
           unit_of_measurement: "minutos"
+
+    solo_noche:
+      name: "Solo encender después de la puesta del sol"
+      description: "Si está activado, las luces solo se encenderán después de la puesta del sol."
+      default: false
+      selector:
+        boolean:
 
 mode: restart
 
@@ -65,6 +72,12 @@ action:
       - conditions:
           - condition: trigger
             id: "presencia_detectada"
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ not !input solo_noche }}"
+              - condition: sun
+                after: sunset
         sequence:
           - service: light.turn_on
             target:
@@ -84,6 +97,12 @@ action:
           - condition: state
             entity_id: !input sensores_presencia
             state: "off"
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ not !input solo_noche }}"
+              - condition: sun
+                after: sunset
         sequence:
           - service: light.turn_on
             target:
