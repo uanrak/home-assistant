@@ -1,6 +1,6 @@
 blueprint:
-  name: "Control de luces por sensores de presencia y puertas"
-  description: "Enciende luces si algún sensor de presencia está ocupado. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia."
+  name: "Control de luces con sensores y script opcional"
+  description: "Enciende luces o ejecuta un script si hay presencia. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia."
   domain: automation
   input:
     sensores_presencia:
@@ -14,7 +14,7 @@ blueprint:
 
     luces:
       name: Luces
-      description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      description: "Selecciona las luces que se encenderán y apagarán automáticamente si no hay script."
       selector:
         entity:
           domain: light
@@ -22,7 +22,7 @@ blueprint:
 
     sensores_puerta:
       name: Sensores de puerta
-      description: "Selecciona los sensores de puerta que activarán las luces."
+      description: "Selecciona los sensores de puerta que activarán las luces (deben ser binary_sensor)."
       selector:
         entity:
           domain: binary_sensor
@@ -37,6 +37,16 @@ blueprint:
           min: 1
           max: 60
           unit_of_measurement: "minutos"
+
+    script_encendido:
+      name: Script de encendido (opcional)
+      description: "Si se define, se ejecutará este script en lugar de encender las luces directamente."
+      default: ""
+      selector:
+        entity:
+          domain: script
+          multiple: false
+          optional: true
 
 mode: restart
 
@@ -66,9 +76,18 @@ action:
           - condition: trigger
             id: "presencia_detectada"
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ script_encendido != '' }}"
+                sequence:
+                  - service: script.turn_on
+                    target:
+                      entity_id: !input script_encendido
+            default:
+              - service: light.turn_on
+                target:
+                  entity_id: !input luces
 
       - conditions:
           - condition: trigger
@@ -85,6 +104,15 @@ action:
             entity_id: !input sensores_presencia
             state: "off"
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ script_encendido != '' }}"
+                sequence:
+                  - service: script.turn_on
+                    target:
+                      entity_id: !input script_encendido
+            default:
+              - service: light.turn_on
+                target:
+                  entity_id: !input luces
