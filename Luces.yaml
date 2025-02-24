@@ -1,0 +1,78 @@
+blueprint:
+  name: "Control de luces por presencia en un área"
+  description: "Enciende las luces si hay presencia en un área y las apaga si no hay movimiento por un tiempo determinado. También enciende las luces si una puerta se abre y el área está desocupada."
+  domain: automation
+  input:
+    area:
+      name: Área
+      description: "Selecciona el área donde se aplicará la automatización."
+      selector:
+        area:
+    tiempo_apagado:
+      name: Tiempo de apagado
+      description: "Tiempo en minutos antes de apagar las luces cuando no haya presencia."
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "minutos"
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input area
+    domain: binary_sensor
+    device_class: motion
+    to: "on"
+    id: "presencia_detectada"
+
+  - platform: state
+    entity_id: !input area
+    domain: binary_sensor
+    device_class: motion
+    to: "off"
+    for:
+      minutes: !input tiempo_apagado
+    id: "sin_presencia"
+
+  - platform: state
+    entity_id: !input area
+    domain: binary_sensor
+    device_class: door
+    to: "on"
+    id: "puerta_abierta"
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: "presencia_detectada"
+        sequence:
+          - service: light.turn_on
+            target:
+              area_id: !input area
+
+      - conditions:
+          - condition: trigger
+            id: "sin_presencia"
+        sequence:
+          - service: light.turn_off
+            target:
+              area_id: !input area
+
+      - conditions:
+          - condition: trigger
+            id: "puerta_abierta"
+          - condition: state
+            entity_id: !input area
+            domain: binary_sensor
+            device_class: motion
+            state: "off"
+        sequence:
+          - service: light.turn_on
+            target:
+              area_id: !input area
