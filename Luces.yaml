@@ -29,14 +29,15 @@ blueprint:
           domain: binary_sensor
           multiple: true
 
-    sensor_luz:
-      name: Sensor de luz (opcional)
-      description: "Selecciona el sensor de luz que determinará si la iluminación ambiental es insuficiente."
-      default: ""
+    sensores_luz:
+      name: Sensores de luz (opcional)
+      description: "Selecciona los sensores de luz que determinarán si la iluminación ambiental es insuficiente."
+      default: []
       selector:
         entity:
           domain: sensor
           device_class: illuminance
+          multiple: true
 
     umbral_luz:
       name: Umbral de luz (opcional)
@@ -84,20 +85,17 @@ trigger:
     entity_id: !input sensores_puerta
     to: "on"
     id: "puerta_abierta"
-    enabled: "{{ sensores_puerta | count > 0 }}"
 
-  - platform: numeric_state
-    entity_id: !input sensor_luz
-    below: !input umbral_luz
+  - platform: template
+    value_template: "{{ sensores_luz | count > 0 and sensors_luz | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
     id: "baja_iluminacion"
-    enabled: "{{ sensor_luz | length > 0 }}"
 
 condition: []
 
 action:
   - variables:
       solo_noche_var: !input solo_noche
-      sensor_luz_var: !input sensor_luz
+      sensores_luz_var: !input sensores_luz
       sensores_puerta_var: !input sensores_puerta
 
   - choose:
@@ -111,7 +109,7 @@ action:
               - condition: sun
                 after: sunset
           - condition: template
-            value_template: "{{ sensor_luz_var == '' or states(sensors_luz_var) | float < umbral_luz }}"
+            value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
@@ -138,7 +136,7 @@ action:
               - condition: sun
                 after: sunset
           - condition: template
-            value_template: "{{ sensor_luz_var == '' or states(sensor_luz_var) | float < umbral_luz }}"
+            value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
