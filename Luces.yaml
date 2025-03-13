@@ -84,19 +84,21 @@ trigger:
     entity_id: !input sensores_puerta
     to: "on"
     id: "puerta_abierta"
-    enabled: "{{ sensores_puerta | length > 0 }}"
+    enabled: "{{ sensores_puerta | count > 0 }}"
 
   - platform: numeric_state
     entity_id: !input sensor_luz
     below: !input umbral_luz
     id: "baja_iluminacion"
-    enabled: "{{ sensor_luz != '' }}"
+    enabled: "{{ sensor_luz | length > 0 }}"
 
 condition: []
 
 action:
   - variables:
       solo_noche_var: !input solo_noche
+      sensor_luz_var: !input sensor_luz
+      sensores_puerta_var: !input sensores_puerta
 
   - choose:
       - conditions:
@@ -108,13 +110,8 @@ action:
                 value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
-          - condition: or
-            conditions:
-              - condition: template
-                value_template: "{{ sensor_luz == '' }}"
-              - condition: numeric_state
-                entity_id: !input sensor_luz
-                below: !input umbral_luz
+          - condition: template
+            value_template: "{{ sensor_luz_var == '' or states(sensors_luz_var) | float < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
@@ -140,13 +137,8 @@ action:
                 value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
-          - condition: or
-            conditions:
-              - condition: template
-                value_template: "{{ sensor_luz == '' }}"
-              - condition: numeric_state
-                entity_id: !input sensor_luz
-                below: !input umbral_luz
+          - condition: template
+            value_template: "{{ sensor_luz_var == '' or states(sensor_luz_var) | float < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
