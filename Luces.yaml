@@ -1,6 +1,6 @@
 blueprint:
   name: "Control de luces por sensores de presencia y puertas"
-  description: "Enciende luces si algún sensor de presencia está ocupado. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia."
+  description: "Enciende luces si algún sensor de presencia está ocupado. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia. Además, se activan si la iluminación ambiental es insuficiente."
   domain: automation
   input:
     sensores_presencia:
@@ -21,12 +21,32 @@ blueprint:
           multiple: true
 
     sensores_puerta:
-      name: Sensores de puerta
+      name: Sensores de puerta (opcional)
       description: "Selecciona los sensores de puerta que activarán las luces."
+      default: []
       selector:
         entity:
           domain: binary_sensor
           multiple: true
+
+    sensor_luz:
+      name: Sensor de luz (opcional)
+      description: "Selecciona el sensor de luz que determinará si la iluminación ambiental es insuficiente."
+      default: ""
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+
+    umbral_luz:
+      name: Umbral de luz (opcional)
+      description: "Nivel de iluminación (en lux) por debajo del cual las luces se encenderán automáticamente."
+      default: 5000
+      selector:
+        number:
+          min: 0
+          max: 5000
+          unit_of_measurement: "lux"
 
     tiempo_apagado:
       name: Tiempo de apagado
@@ -64,6 +84,13 @@ trigger:
     entity_id: !input sensores_puerta
     to: "on"
     id: "puerta_abierta"
+    enabled: "{{ sensores_puerta | length > 0 }}"
+
+  - platform: numeric_state
+    entity_id: !input sensor_luz
+    below: !input umbral_luz
+    id: "baja_iluminacion"
+    enabled: "{{ sensor_luz != '' }}"
 
 condition: []
 
@@ -81,6 +108,13 @@ action:
                 value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ sensor_luz == '' }}"
+              - condition: numeric_state
+                entity_id: !input sensor_luz
+                below: !input umbral_luz
         sequence:
           - service: light.turn_on
             target:
@@ -106,6 +140,13 @@ action:
                 value_template: "{{ not solo_noche_var }}"
               - condition: sun
                 after: sunset
+          - condition: or
+            conditions:
+              - condition: template
+                value_template: "{{ sensor_luz == '' }}"
+              - condition: numeric_state
+                entity_id: !input sensor_luz
+                below: !input umbral_luz
         sequence:
           - service: light.turn_on
             target:
