@@ -87,7 +87,7 @@ trigger:
     id: "puerta_abierta"
 
   - platform: template
-    value_template: "{{ sensores_luz | count > 0 and sensors_luz | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
+    value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz }}"
     id: "baja_iluminacion"
 
 condition: []
@@ -115,7 +115,7 @@ action:
                       - condition: sun
                         after: sunset
               - condition: template
-                value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
+                value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
@@ -148,7 +148,7 @@ action:
                       - condition: sun
                         after: sunset
               - condition: template
-                value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | selectattr('state', 'defined') | map('float', 0) | min < umbral_luz }}"
+                value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz }}"
         sequence:
           - service: light.turn_on
             target:
