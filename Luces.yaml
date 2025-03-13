@@ -86,10 +86,6 @@ trigger:
     to: "on"
     id: "puerta_abierta"
 
-  - platform: template
-    value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz_var }}"
-    id: "baja_iluminacion"
-
 condition: []
 
 action:
@@ -103,7 +99,7 @@ action:
           - condition: trigger
             id: "presencia_detectada"
           - condition: template
-            value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz_var }}"
+            value_template: "{{ sensores_luz_var | count == 0 or (sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz_var) }}"
         sequence:
           - service: light.turn_on
             target:
@@ -124,7 +120,7 @@ action:
             entity_id: !input sensores_presencia
             state: "off"
           - condition: template
-            value_template: "{{ sensores_luz_var | count == 0 or sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz }}"
+            value_template: "{{ sensores_luz_var | count == 0 or (sensores_luz_var | map(attribute='state') | map('float', 0) | min < umbral_luz_var) }}"
         sequence:
           - service: light.turn_on
             target:
