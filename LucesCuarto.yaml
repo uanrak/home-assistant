@@ -1,0 +1,93 @@
+blueprint:
+  name: "Control de luces de Habitación"
+  description: "Enciende luces si una puerta se abre y no hay presencia, siempre que la iluminación ambiental sea insuficiente o no haya sensor de luz. Apaga las luces cuando no haya presencia."
+  domain: automation
+  input:
+    sensores_presencia:
+      name: Sensores de presencia
+      description: "Selecciona los sensores de presencia a monitorear."
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+          multiple: true
+
+    luces:
+      name: Luces
+      description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      selector:
+        entity:
+          domain: light
+          multiple: true
+
+    sensores_puerta:
+      name: Sensores de puerta
+      description: "Selecciona los sensores de puerta que activarán las luces."
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+
+    sensores_luz:
+      name: Sensores de luz (opcional)
+      description: "Selecciona los sensores de luz que determinarán si la iluminación ambiental es insuficiente."
+      default: []
+      selector:
+        entity:
+          domain: sensor
+          device_class: illuminance
+          multiple: true
+
+    umbral_luz:
+      name: Umbral de luz
+      description: "Nivel de iluminación (en lux) por debajo del cual las luces se encenderán automáticamente."
+      default: 5000
+      selector:
+        number:
+          min: 0
+          max: 5000
+          unit_of_measurement: "lux"
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input sensores_puerta
+    to: "on"
+    id: "puerta_abierta"
+
+  - platform: state
+    entity_id: !input sensores_presencia
+    to: "off"
+    id: "sin_presencia"
+
+condition: []
+
+action:
+  - variables:
+      sensores_luz_var: !input sensores_luz
+      umbral_luz_var: !input umbral_luz
+
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: "puerta_abierta"
+          - condition: state
+            entity_id: !input sensores_presencia
+            state: "off"
+          - condition: template
+            value_template: >
+              {{ sensores_luz_var | count == 0 or
+                 (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
+        sequence:
+          - service: light.turn_on
+            target:
+              entity_id: !input luces
+
+      - conditions:
+          - condition: trigger
+            id: "sin_presencia"
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input luces
