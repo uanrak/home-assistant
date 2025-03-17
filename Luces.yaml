@@ -83,6 +83,7 @@ condition: []
 
 action:
   - variables:
+      sensores_presencia_var: !input sensores_presencia
       sensores_luz_var: !input sensores_luz
       sensores_puerta_var: !input sensores_puerta
       umbral_luz_var: !input umbral_luz
@@ -103,6 +104,9 @@ action:
       - conditions:
           - condition: trigger
             id: "sin_presencia"
+          - condition: template
+            value_template: >
+              {{ expand(sensores_presencia_var) | selectattr('state', 'eq', 'off') | list | count == expand(sensores_presencia_var) | list | count }}
         sequence:
           - service: light.turn_off
             target:
