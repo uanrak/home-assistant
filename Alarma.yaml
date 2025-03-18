@@ -28,14 +28,18 @@ blueprint:
           mode: slider
 
 automation:
+  variables:
+    sensors: !input motion_sensors
+    alarma: !input alarm
+    tiempo_espera: !input delay_time
   trigger:
     - platform: state
-      entity_id: !input motion_sensors
+      entity_id: "{{ sensors }}"
       to: "on"
       for:
-        minutes: !input delay_time
+        minutes: "{{ tiempo_espera }}"
   action:
     - service: siren.turn_on
       target:
-        entity_id: !input alarm
+        entity_id: "{{ alarma }}"
   mode: restart
