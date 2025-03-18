@@ -1,6 +1,6 @@
 blueprint:
   name: "Automatizacion Alarma"
-  description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento."
+  description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento. Envía una notificación a los teléfonos configurados."
   domain: automation
   input:
     motion_sensors:
@@ -39,6 +39,14 @@ blueprint:
           unit_of_measurement: "minutos"
           mode: slider
 
+    notify_devices:
+      name: "Dispositivos para notificación"
+      description: "Selecciona los dispositivos que recibirán notificaciones."
+      selector:
+        entity:
+          domain: mobile_app
+          multiple: true
+
 mode: restart
 
 trigger:
@@ -62,6 +70,7 @@ action:
       alarma_var: !input alarm
       tiempo_espera_var: !input delay_time
       tiempo_apagado_var: !input off_delay_time
+      dispositivos_notificacion: !input notify_devices
 
   - choose:
       - conditions:
@@ -71,6 +80,11 @@ action:
           - service: siren.turn_on
             target:
               entity_id: !input alarm
+          - service: notify.notify
+            target:
+              entity_id: !input notify_devices
+            data:
+              message: "Alarma activada: Se ha detectado movimiento continuo."
 
       - conditions:
           - condition: trigger
@@ -79,3 +93,8 @@ action:
           - service: siren.turn_off
             target:
               entity_id: !input alarm
+          - service: notify.notify
+            target:
+              entity_id: !input notify_devices
+            data:
+              message: "Alarma desactivada: No se detecta movimiento."
