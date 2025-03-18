@@ -1,45 +1,81 @@
 blueprint:
-  name: Alarma por detección continua de movimiento
-  description: Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado.
+  name: "Automatizacion Alarma"
+  description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento."
   domain: automation
   input:
     motion_sensors:
-      name: Sensores de movimiento
-      description: Selecciona uno o varios sensores de movimiento
+      name: "Sensores de movimiento"
+      description: "Selecciona uno o varios sensores de movimiento."
       selector:
         entity:
           domain: binary_sensor
           device_class: motion
           multiple: true
+
     alarm:
-      name: Dispositivo de alarma
-      description: Selecciona el dispositivo de alarma a activar
+      name: "Dispositivo de alarma"
+      description: "Selecciona el dispositivo de alarma a activar."
       selector:
         entity:
           domain: siren
+
     delay_time:
-      name: Tiempo de espera (minutos)
-      description: Tiempo que debe permanecer activo el sensor antes de activar la alarma
+      name: "Tiempo de espera (minutos)"
+      description: "Tiempo que debe permanecer activo el sensor antes de activar la alarma."
       selector:
         number:
           min: 1
           max: 60
-          unit_of_measurement: minutos
+          unit_of_measurement: "minutos"
           mode: slider
 
-automation:
-  variables:
-    sensors: !input motion_sensors
-    alarma: !input alarm
-    tiempo_espera: !input delay_time
-  trigger:
-    - platform: state
-      entity_id: "{{ sensors }}"
-      to: "on"
-      for:
-        minutes: "{{ tiempo_espera }}"
-  action:
-    - service: siren.turn_on
-      target:
-        entity_id: "{{ alarma }}"
-  mode: restart
+    off_delay_time:
+      name: "Tiempo de espera para apagado (minutos)"
+      description: "Tiempo que debe permanecer sin detección de movimiento antes de desactivar la alarma."
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "minutos"
+          mode: slider
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input motion_sensors
+    to: "on"
+    for:
+      minutes: !input delay_time
+    id: "movimiento_detectado"
+
+  - platform: state
+    entity_id: !input motion_sensors
+    to: "off"
+    for:
+      minutes: !input off_delay_time
+    id: "movimiento_terminado"
+
+action:
+  - variables:
+      sensores_movimiento_var: !input motion_sensors
+      alarma_var: !input alarm
+      tiempo_espera_var: !input delay_time
+      tiempo_apagado_var: !input off_delay_time
+
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: "movimiento_detectado"
+        sequence:
+          - service: siren.turn_on
+            target:
+              entity_id: !input alarm
+
+      - conditions:
+          - condition: trigger
+            id: "movimiento_terminado"
+        sequence:
+          - service: siren.turn_off
+            target:
+              entity_id: !input alarm
