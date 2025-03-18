@@ -66,7 +66,8 @@ trigger:
 
 action:
   - variables:
-      dispositivos_notificacion: !input notify_devices
+      dispositivos_notificacion: >-
+        {{ expand(!input notify_devices) | map(attribute='entity_id') | map('device_id') | map('device_attr', 'name') | map('slugify') | list }}
 
   - choose:
       - conditions:
@@ -79,7 +80,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                - service: "notify.mobile_app_{{ repeat.item }}"
                   data:
                     title: "⚠️ Alerta de Movimiento"
                     message: "Se ha detectado movimiento continuo."
@@ -97,7 +98,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                - service: "notify.mobile_app_{{ repeat.item }}"
                   data:
                     title: "✅ Alarma Desactivada"
                     message: "No se detecta más movimiento."
