@@ -1,0 +1,41 @@
+blueprint:
+  name: Alarma por detección continua de movimiento
+  description: Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado.
+  domain: automation
+  input:
+    motion_sensors:
+      name: Sensores de movimiento
+      description: Selecciona uno o varios sensores de movimiento
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: motion
+          multiple: true
+    alarm:
+      name: Dispositivo de alarma
+      description: Selecciona el dispositivo de alarma a activar
+      selector:
+        entity:
+          domain: siren
+    delay_time:
+      name: Tiempo de espera (minutos)
+      description: Tiempo que debe permanecer activo el sensor antes de activar la alarma
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: minutos
+          mode: slider
+
+automation:
+  trigger:
+    - platform: state
+      entity_id: !input motion_sensors
+      to: "on"
+      for:
+        minutes: !input delay_time
+  action:
+    - service: siren.turn_on
+      target:
+        entity_id: !input alarm
+  mode: restart
