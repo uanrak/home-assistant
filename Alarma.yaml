@@ -66,10 +66,6 @@ trigger:
 
 action:
   - variables:
-      sensores_movimiento_var: !input motion_sensors
-      alarma_var: !input alarm
-      tiempo_espera_var: !input delay_time
-      tiempo_apagado_var: !input off_delay_time
       dispositivos_notificacion: !input notify_devices
 
   - choose:
@@ -80,11 +76,16 @@ action:
           - service: siren.turn_on
             target:
               entity_id: !input alarm
-          - service: notify.notify
-            target:
-              entity_id: !input notify_devices
-            data:
-              message: "Alarma activada: Se ha detectado movimiento continuo."
+          - repeat:
+              for_each: "{{ dispositivos_notificacion }}"
+              sequence:
+                - service: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                  data:
+                    title: "⚠️ Alerta de Movimiento"
+                    message: "Se ha detectado movimiento continuo."
+                    data:
+                      push:
+                        interruption-level: time-sensitive
 
       - conditions:
           - condition: trigger
@@ -93,8 +94,13 @@ action:
           - service: siren.turn_off
             target:
               entity_id: !input alarm
-          - service: notify.notify
-            target:
-              entity_id: !input notify_devices
-            data:
-              message: "Alarma desactivada: No se detecta movimiento."
+          - repeat:
+              for_each: "{{ dispositivos_notificacion }}"
+              sequence:
+                - service: "notify.mobile_app_{{ device_attr(repeat.item, 'name') | slugify }}"
+                  data:
+                    title: "✅ Alarma Desactivada"
+                    message: "No se detecta más movimiento."
+                    data:
+                      push:
+                        interruption-level: passive
