@@ -1,5 +1,5 @@
 blueprint:
-  name: "Automatizacion Alarma"
+  name: "Alarma por detección continua de movimiento"
   description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento. Envía una notificación a los teléfonos configurados."
   domain: automation
   input:
@@ -43,10 +43,10 @@ blueprint:
       name: "Dispositivos para notificación"
       description: "Selecciona los dispositivos que recibirán notificaciones."
       selector:
-        device:
+        device:  
           filter:
             integration: mobile_app
-
+          multiple: true
 
 mode: restart
 
@@ -68,7 +68,7 @@ trigger:
 action:
   - variables:
       dispositivos_notificacion: >-
-        {{ expand(!input notify_devices) | map(attribute='entity_id') | map('device_id') | map('device_attr', 'name') | map('slugify') | list }}
+        {{ !input notify_devices | map('replace', 'device.', 'mobile_app_') | list }}
 
   - choose:
       - conditions:
@@ -81,7 +81,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.mobile_app_{{ repeat.item }}"
+                - service: "notify.{{ repeat.item }}"
                   data:
                     title: "⚠️ Alerta de Movimiento"
                     message: "Se ha detectado movimiento continuo."
@@ -99,7 +99,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.mobile_app_{{ repeat.item }}"
+                - service: "notify.{{ repeat.item }}"
                   data:
                     title: "✅ Alarma Desactivada"
                     message: "No se detecta más movimiento."
