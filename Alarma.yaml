@@ -71,12 +71,12 @@ trigger:
       minutes: !input off_delay_time
     id: "movimiento_terminado"
 
-action:
-  - variables:
-      dispositivos_notificacion: >-
-        {{ (input_notify_devices | map('device_attr', 'name') | map('slugify') | list) }}
-      camara: !input camera_entity
+variables:
+  camara: !input camera_entity
+  captura_ruta: "/config/www/captura.jpg"
+  captura_url: "/local/captura.jpg"
 
+actions:
   - choose:
       - conditions:
           - condition: trigger
@@ -92,19 +92,17 @@ action:
                   target:
                     entity_id: "{{ camara }}"
                   data:
-                    filename: "/config/www/captura_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+                    filename: "{{ captura_ruta }}"
                 - delay: "00:00:02"
-          - repeat:
-              for_each: "{{ dispositivos_notificacion }}"
-              sequence:
-                - service: "notify.mobile_app_{{ repeat.item }}"
-                  data:
-                    title: "⚠️ Alerta de Movimiento"
-                    message: "Se ha detectado movimiento continuo."
-                    data:
-                      image: "/local/captura_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
-                      push:
-                        interruption-level: time-sensitive
+          - alias: "Notificar que se ha detectado movimiento"
+            domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "⚠️ Se ha detectado movimiento continuo."
+            data:
+              image: "{{ captura_url }}"
+              push:
+                interruption-level: time-sensitive
 
       - conditions:
           - condition: trigger
@@ -113,13 +111,11 @@ action:
           - service: siren.turn_off
             target:
               entity_id: !input alarm
-          - repeat:
-              for_each: "{{ dispositivos_notificacion }}"
-              sequence:
-                - service: "notify.mobile_app_{{ repeat.item }}"
-                  data:
-                    title: "✅ Alarma Desactivada"
-                    message: "No se detecta más movimiento."
-                    data:
-                      push:
-                        interruption-level: passive
+          - alias: "Notificar que la alarma se ha desactivado"
+            domain: mobile_app
+            type: notify
+            device_id: !input notify_device
+            message: "✅ Alarma desactivada. No se detecta más movimiento."
+            data:
+              push:
+                interruption-level: passive
