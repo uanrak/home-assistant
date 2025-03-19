@@ -1,0 +1,48 @@
+blueprint:
+  name: "Escena Condicional con Input Booleano"
+  description: "Activa una de dos escenas en función del estado de un input booleano."
+  domain: automation
+  input:
+    toggle_boolean:
+      name: "Interruptor de condición"
+      description: "Selecciona el input booleano que determinará qué escena se activa."
+      selector:
+        entity:
+          domain: input_boolean
+    scene_true:
+      name: "Escena cuando es True"
+      description: "Selecciona la escena que se activará cuando el input booleano esté en 'on'."
+      selector:
+        entity:
+          domain: scene
+    scene_false:
+      name: "Escena cuando es False"
+      description: "Selecciona la escena que se activará cuando el input booleano esté en 'off'."
+      selector:
+        entity:
+          domain: scene
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input toggle_boolean
+
+action:
+  - choose:
+      - conditions:
+          - condition: state
+            entity_id: !input toggle_boolean
+            state: "on"
+        sequence:
+          - service: scene.turn_on
+            target:
+              entity_id: !input scene_true
+      - conditions:
+          - condition: state
+            entity_id: !input toggle_boolean
+            state: "off"
+        sequence:
+          - service: scene.turn_on
+            target:
+              entity_id: !input scene_false
