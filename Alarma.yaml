@@ -43,9 +43,8 @@ blueprint:
       name: "Dispositivos para notificación"
       description: "Selecciona los dispositivos que recibirán notificaciones."
       selector:
-        device:  
-          filter:
-            integration: mobile_app
+        device: 
+          integration: mobile_app
           multiple: true
 
 mode: restart
