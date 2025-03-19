@@ -43,7 +43,7 @@ blueprint:
       name: "Dispositivos para notificación"
       description: "Selecciona los dispositivos que recibirán notificaciones."
       selector:
-        device: 
+        device:
           integration: mobile_app
           multiple: true
 
@@ -67,7 +67,7 @@ trigger:
 action:
   - variables:
       dispositivos_notificacion: >-
-        {{ !input notify_devices | map('replace', 'device.', 'mobile_app_') | list }}
+        {{ (input_notify_devices | map('device_attr', 'name') | map('slugify') | list) }}
 
   - choose:
       - conditions:
@@ -80,7 +80,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.{{ repeat.item }}"
+                - service: "notify.mobile_app_{{ repeat.item }}"
                   data:
                     title: "⚠️ Alerta de Movimiento"
                     message: "Se ha detectado movimiento continuo."
@@ -98,7 +98,7 @@ action:
           - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
-                - service: "notify.{{ repeat.item }}"
+                - service: "notify.mobile_app_{{ repeat.item }}"
                   data:
                     title: "✅ Alarma Desactivada"
                     message: "No se detecta más movimiento."
