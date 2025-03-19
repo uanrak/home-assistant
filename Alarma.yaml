@@ -1,6 +1,6 @@
 blueprint:
   name: "Alarma por detección continua de movimiento"
-  description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento. Envía una notificación a los teléfonos configurados."
+  description: "Hace sonar una alarma si uno o varios sensores han detectado movimiento durante un tiempo determinado y se desactiva si no detecta movimiento. Envía una notificación a los teléfonos configurados y captura imágenes de una cámara."
   domain: automation
   input:
     motion_sensors:
@@ -47,6 +47,13 @@ blueprint:
           integration: mobile_app
           multiple: true
 
+    camera_entity:
+      name: "Cámara de seguridad"
+      description: "Selecciona la cámara que tomará capturas de pantalla."
+      selector:
+        entity:
+          domain: camera
+
 mode: restart
 
 trigger:
@@ -68,6 +75,7 @@ action:
   - variables:
       dispositivos_notificacion: >-
         {{ (input_notify_devices | map('device_attr', 'name') | map('slugify') | list) }}
+      camara: !input camera_entity
 
   - choose:
       - conditions:
@@ -78,6 +86,15 @@ action:
             target:
               entity_id: !input alarm
           - repeat:
+              count: 5
+              sequence:
+                - service: camera.snapshot
+                  target:
+                    entity_id: "{{ camara }}"
+                  data:
+                    filename: "/config/www/captura_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
+                - delay: "00:00:02"
+          - repeat:
               for_each: "{{ dispositivos_notificacion }}"
               sequence:
                 - service: "notify.mobile_app_{{ repeat.item }}"
@@ -85,6 +102,7 @@ action:
                     title: "⚠️ Alerta de Movimiento"
                     message: "Se ha detectado movimiento continuo."
                     data:
+                      image: "/local/captura_{{ now().strftime('%Y%m%d_%H%M%S') }}.jpg"
                       push:
                         interruption-level: time-sensitive
 
