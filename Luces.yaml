@@ -1,15 +1,17 @@
 blueprint:
-  name: "Control de luces por sensores de presencia y puertas"
+  name: "Control de luces por sensores"
   description: "Enciende luces si algún sensor de presencia está ocupado. Apaga las luces tras un tiempo sin detección. También enciende luces si una puerta se abre y no hay presencia. Además, se activan si la iluminación ambiental es insuficiente."
   domain: automation
   input:
     sensores_presencia:
       name: Sensores de presencia
-      description: "Selecciona los sensores de presencia a monitorear."
+      description: "Selecciona los sensores de presencia o grupos de sensores a monitorear."
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
+              device_class: motion
+            - domain: group
           multiple: true
 
     luces:
@@ -22,11 +24,13 @@ blueprint:
 
     sensores_puerta:
       name: Sensores de puerta (opcional)
-      description: "Selecciona los sensores de puerta que activarán las luces."
+      description: "Selecciona los sensores de puerta o grupos que activarán las luces."
       default: []
       selector:
         entity:
-          domain: binary_sensor
+          filter:
+            - domain: binary_sensor
+            - domain: group
           multiple: true
 
     sensores_luz:
