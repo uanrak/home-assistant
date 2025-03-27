@@ -5,11 +5,13 @@ blueprint:
   input:
     sensores_presencia:
       name: Sensores de presencia
-      description: "Selecciona los sensores de presencia a monitorear."
+      description: "Selecciona los sensores de presencia o grupos de sensores a monitorear."
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
+              device_class: motion
+            - domain: group
           multiple: true
 
     luces:
@@ -22,10 +24,12 @@ blueprint:
 
     sensores_puerta:
       name: Sensores de puerta
-      description: "Selecciona los sensores de puerta que activarán las luces."
+      description: "Selecciona los sensores de puerta o grupos que activarán las luces."
       selector:
         entity:
-          domain: binary_sensor
+          filter:
+            - domain: binary_sensor
+            - domain: group
           multiple: true
 
     sensores_luz:
@@ -48,6 +52,16 @@ blueprint:
           max: 5000
           unit_of_measurement: "lux"
 
+    tiempo_apagado:
+      name: Tiempo de apagado
+      description: "Tiempo en minutos antes de apagar las luces si no hay presencia."
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "minutos"
+
 mode: restart
 
 trigger:
@@ -59,6 +73,8 @@ trigger:
   - platform: state
     entity_id: !input sensores_presencia
     to: "off"
+    for:
+      minutes: !input tiempo_apagado
     id: "sin_presencia"
 
 condition: []
@@ -67,6 +83,7 @@ action:
   - variables:
       sensores_luz_var: !input sensores_luz
       umbral_luz_var: !input umbral_luz
+      sensores_presencia_var: !input sensores_presencia
 
   - choose:
       - conditions:
@@ -87,6 +104,9 @@ action:
       - conditions:
           - condition: trigger
             id: "sin_presencia"
+          - condition: template
+            value_template: >
+              {{ expand(sensores_presencia_var) | selectattr('state', 'eq', 'off') | list | count == expand(sensores_presencia_var) | list | count }}
         sequence:
           - service: light.turn_off
             target:
