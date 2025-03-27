@@ -10,8 +10,6 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
-              device_class: motion
-            - domain: group
           multiple: true
 
     luces:
@@ -30,7 +28,6 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
-            - domain: group
           multiple: true
 
     sensores_luz:
