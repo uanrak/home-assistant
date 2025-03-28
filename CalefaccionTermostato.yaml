@@ -10,6 +10,13 @@ blueprint:
         entity:
           domain: input_boolean
 
+    calefaccion_activa:
+      name: Estado calefacción (booleano de control)
+      default: input_boolean.calefaccion_activa
+      selector:
+        entity:
+          domain: input_boolean
+
     temperatura_actual:
       name: Sensor de temperatura
       selector:
@@ -22,18 +29,6 @@ blueprint:
         entity:
           domain: input_number
 
-    escena_encendido:
-      name: Escena de encendido de calefacción
-      selector:
-        entity:
-          domain: scene
-
-    escena_apagado:
-      name: Escena de apagado de calefacción
-      selector:
-        entity:
-          domain: scene
-
     sensores_presencia:
       name: Sensores de presencia
       selector:
@@ -43,6 +38,7 @@ blueprint:
 
     tiempo_presencia:
       name: Tiempo de presencia requerido (minutos)
+      default: 5
       selector:
         number:
           min: 1
@@ -88,9 +84,9 @@ action:
                 entity_id: !input sensores_presencia
                 state: 'on'
         sequence:
-          - service: scene.turn_on
+          - service: input_boolean.turn_on
             target:
-              entity_id: !input escena_encendido
+              entity_id: !input calefaccion_activa
 
       - conditions:
           - condition: or
@@ -104,6 +100,6 @@ action:
                 entity_id: !input temperatura_actual
                 above: !input temperatura_objetivo
         sequence:
-          - service: scene.turn_on
+          - service: input_boolean.turn_off
             target:
-              entity_id: !input escena_apagado
+              entity_id: !input calefaccion_activa
