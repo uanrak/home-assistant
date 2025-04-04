@@ -1,6 +1,6 @@
 blueprint:
   name: "Control de luces de Habitación"
-  description: "Enciende luces si una puerta se abre y no hay presencia, siempre que la iluminación ambiental sea insuficiente o no haya sensor de luz. Apaga las luces cuando no haya presencia. También permite alternar las luces mediante un interruptor."
+  description: "Enciende luces si una puerta se abre y no hay presencia, siempre que la iluminación ambiental sea insuficiente o no haya sensor de luz. Apaga las luces cuando no haya presencia. También permite alternar las luces mediante un botón Zigbee o interruptor."
   domain: automation
   input:
     sensores_presencia:
@@ -61,17 +61,16 @@ blueprint:
           max: 60
           unit_of_measurement: "minutos"
 
-    interruptor:
-      name: Interruptor manual
-      description: "Selecciona un botón o interruptor para alternar las luces manualmente."
+    interruptor_estado:
+      name: Interruptor o botón
+      description: "Selecciona interruptores, sensores o botones Zigbee que activan el control manual."
       default: []
       selector:
-        entity:
-          filter:
-            - domain: input_button
-            - domain: switch
-            - domain: binary_sensor
-          multiple: true
+        target:
+          entity:
+            domain: [switch, binary_sensor]
+          device:
+            integration: zha
 
 mode: restart
 
@@ -88,15 +87,15 @@ trigger:
       minutes: !input tiempo_apagado
     id: "sin_presencia"
 
-  - platform: event
-    event_type: input_button.press
-    event_data:
-      entity_id: !input interruptor
+  - platform: state
+    entity_id: !input interruptor_estado
     id: "interruptor_manual"
 
-  - platform: state
-    entity_id: !input interruptor
+  - platform: event
+    event_type: zha_event
     id: "interruptor_manual"
+    event_data:
+      device_id: !input interruptor_estado
 
 condition: []
 
@@ -106,7 +105,6 @@ action:
       umbral_luz_var: !input umbral_luz
       sensores_presencia_var: !input sensores_presencia
       luces_var: !input luces
-      interruptor_var: !input interruptor
 
   - choose:
       - conditions:
@@ -143,7 +141,7 @@ action:
           - condition: trigger
             id: "interruptor_manual"
           - condition: template
-            value_template: "{{ luces_var | count > 0 and interruptor_var | count > 0 }}"
+            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.toggle
             target:
