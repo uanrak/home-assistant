@@ -62,15 +62,13 @@ blueprint:
           unit_of_measurement: "minutos"
 
     interruptor_estado:
-      name: Interruptor o botón
-      description: "Selecciona interruptores, sensores o botones Zigbee que activan el control manual."
+      name: Interruptores o botones
+      description: "Selecciona interruptores, sensores o botones Zigbee (ZHA) que activan el control manual."
       default: []
       selector:
-        target:
-          entity:
-            domain: [switch, binary_sensor]
-          device:
-            integration: zha
+        device:
+          integration: zha
+          multiple: true
 
 mode: restart
 
@@ -88,14 +86,16 @@ trigger:
     id: "sin_presencia"
 
   - platform: state
-    entity_id: !input interruptor_estado
+    entity_id: >
+      {{ expand(!input interruptor_estado) | map(attribute='entity_id') | list }}
     id: "interruptor_manual"
 
   - platform: event
     event_type: zha_event
-    id: "interruptor_manual"
     event_data:
-      device_id: !input interruptor_estado
+      device_id: >
+        {{ expand(!input interruptor_estado) | map(attribute='device_id') | list }}
+    id: "interruptor_manual"
 
 condition: []
 
