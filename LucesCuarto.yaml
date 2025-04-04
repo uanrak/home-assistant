@@ -67,7 +67,10 @@ blueprint:
       default: []
       selector:
         entity:
-          domain: [input_button, switch, binary_sensor]
+          filter:
+            - domain: input_button
+            - domain: switch
+            - domain: binary_sensor
           multiple: true
 
 mode: restart
@@ -85,6 +88,12 @@ trigger:
       minutes: !input tiempo_apagado
     id: "sin_presencia"
 
+  - platform: event
+    event_type: input_button.press
+    event_data:
+      entity_id: !input interruptor
+    id: "interruptor_manual"
+
   - platform: state
     entity_id: !input interruptor
     id: "interruptor_manual"
@@ -97,6 +106,7 @@ action:
       umbral_luz_var: !input umbral_luz
       sensores_presencia_var: !input sensores_presencia
       luces_var: !input luces
+      interruptor_var: !input interruptor
 
   - choose:
       - conditions:
@@ -133,7 +143,7 @@ action:
           - condition: trigger
             id: "interruptor_manual"
           - condition: template
-            value_template: "{{ luces_var | count > 0 }}"
+            value_template: "{{ luces_var | count > 0 and interruptor_var | count > 0 }}"
         sequence:
           - service: light.toggle
             target:
