@@ -67,7 +67,6 @@ blueprint:
       default: []
       selector:
         device:
-          integration: zha
           multiple: true
 
 mode: restart
@@ -89,7 +88,8 @@ trigger:
     event_type: zha_event
     id: "interruptor_manual"
     event_data:
-      device_id: !input interruptor_estado
+      device_ieee: >
+        {{ expand(device_entities(!input interruptor_estado)) | map(attribute='attributes.ieee') | list }}
 
 condition: []
 
