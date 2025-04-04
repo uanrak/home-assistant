@@ -15,6 +15,7 @@ blueprint:
     luces:
       name: Luces
       description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      default: []
       selector:
         entity:
           domain: light
@@ -63,10 +64,11 @@ blueprint:
     interruptor:
       name: Interruptor manual
       description: "Selecciona un botón o interruptor para alternar las luces manualmente."
-      default: null
+      default: []
       selector:
         entity:
           domain: [input_button, switch, binary_sensor]
+          multiple: true
 
 mode: restart
 
@@ -94,6 +96,7 @@ action:
       sensores_luz_var: !input sensores_luz
       umbral_luz_var: !input umbral_luz
       sensores_presencia_var: !input sensores_presencia
+      luces_var: !input luces
 
   - choose:
       - conditions:
@@ -106,6 +109,8 @@ action:
             value_template: >
               {{ sensores_luz_var | count == 0 or
                  (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
+          - condition: template
+            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.turn_on
             target:
@@ -117,6 +122,8 @@ action:
           - condition: template
             value_template: >
               {{ expand(sensores_presencia_var) | selectattr('state', 'eq', 'off') | list | count == expand(sensores_presencia_var) | list | count }}
+          - condition: template
+            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.turn_off
             target:
@@ -125,6 +132,8 @@ action:
       - conditions:
           - condition: trigger
             id: "interruptor_manual"
+          - condition: template
+            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.toggle
             target:
