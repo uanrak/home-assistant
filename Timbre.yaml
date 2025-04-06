@@ -1,32 +1,31 @@
 blueprint:
   name: "Timbre inteligente por planta"
   description: >
-    Suena un timbre y ejecuta un script según qué sensor (por planta) detecte presencia.
+    Activa un switch como timbre y ejecuta un script según qué sensor (por planta) detecte presencia.
     Si ningún sensor detecta, se activa un Fingerbot como fallback.
   domain: automation
 
   input:
     sensores:
       name: "Sensores de presencia por planta"
-      description: "Ordenados por planta. Si hay movimiento, se activará el timbre correspondiente y se ejecutará un script con él como parámetro."
+      description: "Ordenados por planta. Si hay movimiento, se activará el switch correspondiente y se ejecutará un script con él como parámetro."
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
           multiple: true
 
     timbres:
-      name: "Timbres por planta"
-      description: "Lista de dispositivos de timbre, debe coincidir el orden con los sensores."
+      name: "Switches por planta (timbres)"
+      description: "Lista de switches que actuarán como timbres. Ordenados como los sensores."
       selector:
-        device:
-          filter:
-            integration: zha
+        entity:
+          domain: switch
           multiple: true
 
     script:
       name: "Script a ejecutar"
-      description: "Script que se ejecutará con el timbre como parámetro."
+      description: "Script que se ejecutará con el switch como parámetro."
       selector:
         entity:
           domain: script
@@ -39,23 +38,25 @@ blueprint:
           domain: switch
 
     boton:
-      name: "Botón de activación del timbre"
-      description: "Botón que activa la lógica de timbre."
+      name: "Botón de activación"
+      description: "Dispositivo que actúa como botón físico (por ejemplo, TS004F)."
       selector:
-        entity:
-          domain: input_button
+        device:
+          filter:
+            integration: zha
 
 mode: queued
 
 trigger:
-  - platform: state
-    entity_id: !input boton
-    to: "on"
+  - platform: event
+    event_type: zha_event
+    event_data:
+      device_id: !input boton
+      command: "toggle"
 
 variables:
   sensores_var: !input sensores
-  timbres_var: >-
-    {{ expand((!input timbres) | map('device_entities') | list | flatten) | select('search', 'switch') | list }}
+  timbres_var: !input timbres
   script_var: !input script
   fingerbot_var: !input fingerbot
 
