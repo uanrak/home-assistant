@@ -20,8 +20,9 @@ blueprint:
       description: "Lista de dispositivos de timbre, debe coincidir el orden con los sensores."
       selector:
         entity:
-          domain: siren
           multiple: true
+          filter:
+            - domain: switch
 
     script:
       name: "Script a ejecutar"
