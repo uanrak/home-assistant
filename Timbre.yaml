@@ -11,18 +11,18 @@ blueprint:
       description: "Ordenados por planta. Si hay movimiento, se activará el timbre correspondiente y se ejecutará un script con él como parámetro."
       selector:
         entity:
-          filter:
-            - domain: binary_sensor
+          domain: binary_sensor
+          device_class: motion
           multiple: true
 
     timbres:
       name: "Timbres por planta"
       description: "Lista de dispositivos de timbre, debe coincidir el orden con los sensores."
       selector:
-        entity:
-          multiple: true
+        device:
           filter:
-            - domain: switch
+            integration: zha
+          multiple: true
 
     script:
       name: "Script a ejecutar"
@@ -54,7 +54,8 @@ trigger:
 
 variables:
   sensores_var: !input sensores
-  timbres_var: !input timbres
+  timbres_var: >-
+    {{ expand((!input timbres) | map('device_entities') | list | flatten) | select('search', 'switch') | list }}
   script_var: !input script
   fingerbot_var: !input fingerbot
 
