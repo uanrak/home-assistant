@@ -63,13 +63,13 @@ variables:
 action:
   - variables:
       activados: >-
-        {% set lista = [] %}
+        {% set indices = namespace(val=[]) %}
         {% for i in range(sensores_var | length) %}
           {% if is_state(sensores_var[i], 'on') %}
-            {% set _ = lista.append(i) %}
+            {% set indices.val = indices.val + [i] %}
           {% endif %}
         {% endfor %}
-        {{ lista }}
+        {{ indices.val }}
 
   - choose:
       - conditions:
