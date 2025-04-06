@@ -11,8 +11,8 @@ blueprint:
       description: "Ordenados por planta. Si hay movimiento, se activará el timbre correspondiente y se ejecutará un script con él como parámetro."
       selector:
         entity:
-          domain: binary_sensor
-          device_class: motion
+          filter:
+            - domain: binary_sensor
           multiple: true
 
     timbres:
