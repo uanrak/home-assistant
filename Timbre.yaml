@@ -11,8 +11,8 @@ blueprint:
       description: "Ordenados por planta. Si hay movimiento, se activará el switch correspondiente y se ejecutará un script con él como parámetro."
       selector:
         entity:
-          filter:
-            - domain: binary_sensor
+          domain: binary_sensor
+          device_class: motion
           multiple: true
 
     timbres:
@@ -39,7 +39,7 @@ blueprint:
 
     boton:
       name: "Botón de activación"
-      description: "Dispositivo que actúa como botón físico (por ejemplo, TS004F)."
+      description: "Botón Zigbee compatible con eventos ZHA (como TS004F)."
       selector:
         device:
           filter:
@@ -48,11 +48,11 @@ blueprint:
 mode: queued
 
 trigger:
-  - platform: event
-    event_type: zha_event
-    event_data:
-      device_id: !input boton
-      command: "toggle"
+  - platform: device
+    device_id: !input boton
+    domain: zha
+    type: remote_button_short_press
+    subtype: button_1
 
 variables:
   sensores_var: !input sensores
