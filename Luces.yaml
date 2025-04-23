@@ -107,7 +107,7 @@ action:
             id: "sin_presencia"
           - condition: template
             value_template: >
-              {{ expand(sensores_presencia_var) | selectattr('state', 'eq', 'off') | list | count == expand(sensores_presencia_var) | list | count }}
+              {{ sensores_presencia_var | map('states') | select('eq', 'off') | list | count == sensores_presencia_var | count }}
         sequence:
           - service: light.turn_off
             target:
