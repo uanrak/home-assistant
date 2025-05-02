@@ -80,6 +80,13 @@ trigger:
     to: "on"
     id: "puerta_abierta"
 
+  - platform: state
+    entity_id: !input sensores_puerta
+    to: "on"
+    for:
+      minutes: !input tiempo_apagado
+    id: "puerta_abierta_sin_presencia"
+
 condition: []
 
 action:
@@ -88,6 +95,7 @@ action:
       sensores_luz_var: !input sensores_luz
       sensores_puerta_var: !input sensores_puerta
       umbral_luz_var: !input umbral_luz
+      tiempo_apagado_var: !input tiempo_apagado
 
   - choose:
       - conditions:
@@ -125,5 +133,18 @@ action:
                  (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
         sequence:
           - service: light.turn_on
+            target:
+              entity_id: !input luces
+
+      - conditions:
+          - condition: trigger
+            id: "puerta_abierta_sin_presencia"
+          - condition: template
+            value_template: >
+              {% set min_last_changed = sensores_presencia_var | map('states') | map('attr', 'last_changed') | map('as_datetime') | map('timestamp') | min %}
+              {{ sensores_presencia_var | map('states') | select('eq', 'off') | list | count == sensores_presencia_var | count and
+                 ((as_timestamp(now()) - min_last_changed) / 60) >= tiempo_apagado_var }}
+        sequence:
+          - service: light.turn_off
             target:
               entity_id: !input luces
