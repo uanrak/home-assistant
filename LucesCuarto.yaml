@@ -92,28 +92,15 @@ condition: []
 
 action:
   - variables:
-      sensores_luz_var: !input sensores_luz
-      umbral_luz_var: !input umbral_luz
-      sensores_presencia_var: !input sensores_presencia
       luces_var: !input luces
       interruptores_var: !input interruptor_estado
       evento_dispositivo: "{{ trigger.event.data.device_id if trigger.platform == 'event' else '' }}"
-      tipo_evento: "{{ trigger.event.data.command if trigger.platform == 'event' else '' }}"
       tipo_presion: "{{ trigger.event.data.args.press_type if trigger.event.data.args is defined and 'press_type' in trigger.event.data.args else None }}"
 
   - choose:
       - conditions:
           - condition: trigger
             id: "puerta_abierta"
-          - condition: state
-            entity_id: !input sensores_presencia
-            state: "off"
-          - condition: template
-            value_template: >
-              {{ sensores_luz_var | count == 0 or
-                 (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
-          - condition: template
-            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.turn_on
             target:
@@ -122,11 +109,6 @@ action:
       - conditions:
           - condition: trigger
             id: "sin_presencia"
-          - condition: template
-            value_template: >
-              {{ expand(sensores_presencia_var) | selectattr('state', 'eq', 'off') | list | count == expand(sensores_presencia_var) | list | count }}
-          - condition: template
-            value_template: "{{ luces_var | count > 0 }}"
         sequence:
           - service: light.turn_off
             target:
@@ -136,11 +118,7 @@ action:
           - condition: trigger
             id: "interruptor_evento"
           - condition: template
-            value_template: >
-              {{ interruptores_var | count == 0 or evento_dispositivo in interruptores_var }}
-          - condition: template
-            value_template: >
-              {{ tipo_presion == 1 }}
+            value_template: "{{ tipo_presion == 1 }}"
         sequence:
           - service: light.turn_on
             target:
@@ -150,11 +128,7 @@ action:
           - condition: trigger
             id: "interruptor_evento"
           - condition: template
-            value_template: >
-              {{ interruptores_var | count == 0 or evento_dispositivo in interruptores_var }}
-          - condition: template
-            value_template: >
-              {{ tipo_presion == 2 }}
+            value_template: "{{ tipo_presion == 2 }}"
         sequence:
           - service: light.turn_off
             target:
