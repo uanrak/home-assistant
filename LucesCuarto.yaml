@@ -97,6 +97,7 @@ action:
       sensores_presencia_var: !input sensores_presencia
       luces_var: !input luces
       interruptores_var: !input interruptor_estado
+      click_type: "{{ trigger.event.data.command if trigger.event.data is defined else '' }}"
 
   - choose:
       - conditions:
@@ -136,8 +137,22 @@ action:
             value_template: >
               {{ luces_var | count > 0 and
                  (interruptores_var | count == 0 or
-                  trigger.event.data.device_id in interruptores_var) }}
+                  trigger.event.data.device_id in interruptores_var) and
+                 click_type in ['single', 'double'] }}
         sequence:
-          - service: light.toggle
-            target:
-              entity_id: !input luces
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ click_type == 'single' }}"
+                sequence:
+                  - service: light.turn_on
+                    target:
+                      entity_id: !input luces
+
+              - conditions:
+                  - condition: template
+                    value_template: "{{ click_type == 'double' }}"
+                sequence:
+                  - service: light.turn_off
+                    target:
+                      entity_id: !input luces
