@@ -84,23 +84,24 @@ trigger:
       minutes: !input tiempo_apagado
     id: "sin_presencia"
 
-  - platform: device
-    device_id: !input interruptor_estado
-    domain: zha
-    type: remote_button_short_press
-    subtype: button_1
-    id: "presion_simple"
+  - platform: event
+    event_type: zha_event
+    event_data:
+      command: remote_button_short_press
+    id: "interruptor_corto"
 
-  - platform: device
-    device_id: !input interruptor_estado
-    domain: zha
-    type: remote_button_double_press
-    subtype: button_1
-    id: "presion_doble"
+  - platform: event
+    event_type: zha_event
+    event_data:
+      command: remote_button_double_press
+    id: "interruptor_doble"
 
 condition: []
 
 action:
+  - variables:
+      luces_var: !input luces
+
   - choose:
       - conditions:
           - condition: trigger
@@ -120,7 +121,7 @@ action:
 
       - conditions:
           - condition: trigger
-            id: "presion_simple"
+            id: "interruptor_corto"
         sequence:
           - service: light.turn_on
             target:
@@ -128,7 +129,7 @@ action:
 
       - conditions:
           - condition: trigger
-            id: "presion_doble"
+            id: "interruptor_doble"
         sequence:
           - service: light.turn_off
             target:
