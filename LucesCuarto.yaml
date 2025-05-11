@@ -86,7 +86,15 @@ trigger:
 
   - platform: event
     event_type: zha_event
-    id: "interruptor_manual"
+    event_data:
+      press_type: 1
+    id: "interruptor_presionar"
+
+  - platform: event
+    event_type: zha_event
+    event_data:
+      press_type: 2
+    id: "interruptor_doble_presion"
 
 condition: []
 
@@ -97,7 +105,6 @@ action:
       sensores_presencia_var: !input sensores_presencia
       luces_var: !input luces
       interruptores_var: !input interruptor_estado
-      click_type: "{{ trigger.event.data.command if trigger.event.data is defined else '' }}"
 
   - choose:
       - conditions:
@@ -132,27 +139,26 @@ action:
 
       - conditions:
           - condition: trigger
-            id: "interruptor_manual"
+            id: "interruptor_presionar"
           - condition: template
             value_template: >
               {{ luces_var | count > 0 and
                  (interruptores_var | count == 0 or
-                  trigger.event.data.device_id in interruptores_var) and
-                 click_type in ['single', 'double'] }}
+                  trigger.event.data.device_id in interruptores_var) }}
         sequence:
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ click_type == 'single' }}"
-                sequence:
-                  - service: light.turn_on
-                    target:
-                      entity_id: !input luces
+          - service: light.turn_on
+            target:
+              entity_id: !input luces
 
-              - conditions:
-                  - condition: template
-                    value_template: "{{ click_type == 'double' }}"
-                sequence:
-                  - service: light.turn_off
-                    target:
-                      entity_id: !input luces
+      - conditions:
+          - condition: trigger
+            id: "interruptor_doble_presion"
+          - condition: template
+            value_template: >
+              {{ luces_var | count > 0 and
+                 (interruptores_var | count == 0 or
+                  trigger.event.data.device_id in interruptores_var) }}
+        sequence:
+          - service: light.turn_off
+            target:
+              entity_id: !input luces
