@@ -1,10 +1,15 @@
 blueprint:
-  name: Control de Deshumidificación Automático
-  description: Activa o desactiva un input_boolean según humedad, comparando con valores mínimo y máximo.
+  name: Control de Deshumidificador Automático
+  description: Enciende o apaga un deshumidificador según los valores de humedad y una lógica activadora.
   domain: automation
   input:
     deshumidificacion_activada:
-      name: Input Boolean - Deshumidificación Activada
+      name: Input Boolean - Deshumidificación Activada (Control)
+      selector:
+        entity:
+          domain: input_boolean
+    deshumidificador:
+      name: Input Boolean - Deshumidificador (Dispositivo)
       selector:
         entity:
           domain: input_boolean
@@ -29,31 +34,28 @@ trigger:
   - platform: state
     entity_id: !input sensor_humedad
 
-condition: []
+condition:
+  - condition: state
+    entity_id: !input deshumidificacion_activada
+    state: "on"
 
 action:
   - choose:
       - conditions:
-          - condition: state
-            entity_id: !input deshumidificacion_activada
-            state: "off"
           - condition: numeric_state
             entity_id: !input sensor_humedad
             above: !input humedad_maxima
         sequence:
           - service: input_boolean.turn_on
             target:
-              entity_id: !input deshumidificacion_activada
+              entity_id: !input deshumidificador
       - conditions:
-          - condition: state
-            entity_id: !input deshumidificacion_activada
-            state: "on"
           - condition: numeric_state
             entity_id: !input sensor_humedad
             below: !input humedad_minima
         sequence:
           - service: input_boolean.turn_off
             target:
-              entity_id: !input deshumidificacion_activada
+              entity_id: !input deshumidificador
 
 mode: single
