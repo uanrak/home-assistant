@@ -107,11 +107,20 @@ condition: []
 action:
   - variables:
       luces_var: !input luces
+      sensores_luz_var: !input sensores_luz
+      umbral_luz_var: !input umbral_luz
 
   - choose:
       - conditions:
           - condition: trigger
             id: "puerta_abierta"
+          - condition: state
+            entity_id: !input sensores_presencia
+            state: "off"
+          - condition: template
+            value_template: >
+              {{ sensores_luz_var | count == 0 or
+                 (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
         sequence:
           - service: light.turn_on
             target:
