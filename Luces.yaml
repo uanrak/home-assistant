@@ -56,7 +56,7 @@ blueprint:
       default: 1
       selector:
         number:
-          min: 1
+          min: 0
           max: 60
           unit_of_measurement: "minutos"
 
