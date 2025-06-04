@@ -88,7 +88,7 @@ actions:
           - alias: "Notificar que se ha detectado movimiento"
             domain: mobile_app
             type: notify
-            device_id: !input notify_device
+            device_id: !input notify_devices
             message: "⚠️ Se ha detectado movimiento continuo."
             data:
               image: "{{ captura_url }}"
@@ -105,7 +105,7 @@ actions:
           - alias: "Notificar que la alarma se ha desactivado"
             domain: mobile_app
             type: notify
-            device_id: !input notify_device
+            device_id: !input notify_devices
             message: "✅ Alarma desactivada. No se detecta más movimiento."
             data:
               push:
