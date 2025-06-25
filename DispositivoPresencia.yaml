@@ -1,0 +1,67 @@
+blueprint:
+  name: "Control de apertura por presencia"
+  description: "Abre o cierra uno o varios dispositivos seg\u00fan si hay presencia. Si no se detecta nadie durante cierto tiempo, se cierran."
+  domain: automation
+  input:
+    sensores_presencia:
+      name: Sensores de presencia
+      description: "Sensores o grupos que indican si hay alguien presente."
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+          multiple: true
+
+    dispositivos:
+      name: Dispositivos a abrir/cerrar
+      description: "Lista de covers a controlar."
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+    tiempo_ausencia:
+      name: Tiempo sin presencia
+      description: "Minutos a esperar sin presencia antes de cerrar."
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "minutos"
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input sensores_presencia
+    to: "on"
+    id: "presencia_detectada"
+
+  - platform: state
+    entity_id: !input sensores_presencia
+    to: "off"
+    for:
+      minutes: !input tiempo_ausencia
+    id: "sin_presencia"
+
+condition: []
+
+action:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: "presencia_detectada"
+        sequence:
+          - service: cover.open_cover
+            target:
+              entity_id: !input dispositivos
+
+      - conditions:
+          - condition: trigger
+            id: "sin_presencia"
+        sequence:
+          - service: cover.close_cover
+            target:
+              entity_id: !input dispositivos
+
