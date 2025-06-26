@@ -1,6 +1,6 @@
 blueprint:
   name: "Escena Condicional con Input Booleano"
-  description: "Activa una de dos escenas o acciones en función del estado de un input booleano. Si las entidades son booleanas, se establecerán en 'on' o 'off' según corresponda."
+  description: "Activa una de dos escenas o entidades según el estado de un booleano. Las entidades de tipo input_boolean o switch se pondrán en 'on' o 'off'; las escenas o scripts se ejecutarán."
   domain: automation
   input:
     toggle_boolean:
@@ -24,7 +24,8 @@ blueprint:
             - domain: switch
     scene_false:
       name: "Acción cuando es False"
-      description: "Escena, script o entidad que se desactivará o se pondrá en 'off' cuando el booleano esté en 'off'."
+      description: "Escena, script o entidad que se ejecutará o se pondrá en 'off' cuando el booleano esté en 'off'."
+
       selector:
         entity:
           filter:
@@ -57,15 +58,32 @@ action:
             state: "on"
         sequence:
           - delay: !input delay_seconds
-          - service: homeassistant.turn_on
+          - variables:
+              target_true: !input scene_true
+              target_true_domain: "{{ target_true.split('.')[0] }}"
+          - service: "{{ target_true_domain }}.turn_on"
             target:
-              entity_id: !input scene_true
+              entity_id: "{{ target_true }}"
+
       - conditions:
           - condition: state
             entity_id: !input toggle_boolean
             state: "off"
         sequence:
           - delay: !input delay_seconds
-          - service: homeassistant.turn_off
-            target:
-              entity_id: !input scene_false
+          - variables:
+              target_false: !input scene_false
+              target_false_domain: "{{ target_false.split('.')[0] }}"
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: "{{ target_false_domain in ['scene', 'script'] }}"
+                sequence:
+                  - service: "{{ target_false_domain }}.turn_on"
+                    target:
+                      entity_id: "{{ target_false }}"
+            default:
+              - service: "{{ target_false_domain }}.turn_off"
+                target:
+                  entity_id: "{{ target_false }}"
+
