@@ -57,7 +57,6 @@ action:
             entity_id: !input toggle_boolean
             state: "on"
         sequence:
-          - delay: !input delay_seconds
           - variables:
               target_true: !input scene_true
               target_true_domain: "{{ target_true.split('.')[0] }}"
