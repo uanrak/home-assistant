@@ -25,6 +25,7 @@ blueprint:
     scene_false:
       name: "Acción cuando es False"
       description: "Escena, script o entidad que se ejecutará o se pondrá en 'off' cuando el booleano esté en 'off'."
+
       selector:
         entity:
           filter:
@@ -63,6 +64,7 @@ action:
           - service: "{{ target_true_domain }}.turn_on"
             target:
               entity_id: "{{ target_true }}"
+
       - conditions:
           - condition: state
             entity_id: !input toggle_boolean
@@ -84,3 +86,4 @@ action:
               - service: "{{ target_false_domain }}.turn_off"
                 target:
                   entity_id: "{{ target_false }}"
+
