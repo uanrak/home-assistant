@@ -5,26 +5,40 @@ blueprint:
   input:
     toggle_boolean:
       name: "Interruptor de condición"
-      description: "Selecciona el input booleano que determinará qué escena se activa."
+      description: "Selecciona la entidad booleana que determinará qué acción se activa."
       selector:
         entity:
-          domain: input_boolean
+          filter:
+            - domain: input_boolean
+            - domain: switch
+            - domain: binary_sensor
     scene_true:
       name: "Acción cuando es True"
-      description: "Escena o script que se ejecutará cuando el input booleano esté en 'on'."
+      description: "Escena, script o entidad que se encenderá cuando el booleano esté en 'on'."
       selector:
         entity:
           filter:
             - domain: scene
             - domain: script
+            - domain: input_boolean
+            - domain: switch
     scene_false:
       name: "Acción cuando es False"
-      description: "Escena o script que se ejecutará cuando el input booleano esté en 'off'."
+      description: "Escena, script o entidad que se apagará cuando el booleano esté en 'off'."
       selector:
         entity:
           filter:
             - domain: scene
             - domain: script
+            - domain: input_boolean
+            - domain: switch
+    toggle_entities:
+      name: "Dispositivos a controlar"
+      description: "Entidades que se encenderán con 'on' y se apagarán con 'off'."
+      default: []
+      selector:
+        entity:
+          multiple: true
     delay_seconds:
       name: "Retraso en segundos"
       description: "Tiempo a esperar antes de ejecutar la acción."
@@ -53,6 +67,9 @@ action:
           - service: homeassistant.turn_on
             target:
               entity_id: !input scene_true
+          - service: homeassistant.turn_on
+            target:
+              entity_id: !input toggle_entities
       - conditions:
           - condition: state
             entity_id: !input toggle_boolean
@@ -62,3 +79,6 @@ action:
           - service: homeassistant.turn_on
             target:
               entity_id: !input scene_false
+          - service: homeassistant.turn_off
+            target:
+              entity_id: !input toggle_entities
