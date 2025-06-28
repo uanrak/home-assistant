@@ -97,6 +97,7 @@ action:
       luces_var: !input luces
       sensores_luz_var: !input sensores_luz
       umbral_luz_var: !input umbral_luz
+      interruptor_estado_var: !input interruptor_estado
 
   - choose:
       - conditions:
@@ -125,6 +126,9 @@ action:
       - conditions:
           - condition: trigger
             id: "interruptor_corto"
+          - condition: template
+            value_template: >
+              {{ trigger.event.data.device_id in interruptor_estado_var }}
         sequence:
           - service: light.toggle
             target:
