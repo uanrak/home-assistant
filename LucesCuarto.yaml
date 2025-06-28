@@ -62,12 +62,12 @@ blueprint:
           unit_of_measurement: "minutos"
 
     interruptor_estado:
-      name: Interruptores o botones
-      description: "Selecciona interruptores, sensores o botones Zigbee (ZHA) que activan el control manual."
-      default: []
+      name: Interruptor o botón
+      description: "Botón Zigbee compatible con eventos ZHA que alternará las luces."
       selector:
         device:
-          multiple: true
+          filter:
+            integration: zha
 
 mode: restart
 
@@ -84,10 +84,10 @@ trigger:
       minutes: !input tiempo_apagado
     id: "sin_presencia"
 
-  - platform: event
-    event_type: zha_event
-    event_data:
-      command: remote_button_short_press
+  - platform: device
+    device_id: !input interruptor_estado
+    domain: zha
+    type: remote_button_short_press
     id: "interruptor_corto"
 
 condition: []
@@ -128,7 +128,7 @@ action:
             id: "interruptor_corto"
           - condition: template
             value_template: >
-              {{ trigger.event.data.device_id in interruptor_estado_var }}
+              {{ trigger.device_id == interruptor_estado_var }}
         sequence:
           - service: light.toggle
             target:
