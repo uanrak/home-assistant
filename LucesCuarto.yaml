@@ -90,18 +90,6 @@ trigger:
       command: remote_button_short_press
     id: "interruptor_corto"
 
-  - platform: event
-    event_type: zha_event
-    event_data:
-      command: remote_button_double_press
-    id: "interruptor_doble"
-
-  - platform: event
-    event_type: zha_event
-    event_data:
-      command: remote_button_long_press
-    id: "interruptor_largo"
-
 condition: []
 
 action:
@@ -137,28 +125,6 @@ action:
       - conditions:
           - condition: trigger
             id: "interruptor_corto"
-          - condition: time
-            after: "07:00:00"
-            before: "20:00:00"
-        sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
-
-      - conditions:
-          - condition: trigger
-            id: "interruptor_doble"
-          - condition: time
-            after: "07:00:00"
-            before: "20:00:00"
-        sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input luces
-
-      - conditions:
-          - condition: trigger
-            id: "interruptor_largo"
         sequence:
           - service: light.toggle
             target:
