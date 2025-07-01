@@ -65,12 +65,13 @@ variables:
   enfriador_entity: !input enfriador
   calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
   enfriador_domain: "{{ enfriador_entity.split('.')[0] }}"
+  todo_el_dia_value: !input todo_el_dia
 
 condition:
   - condition: or
     conditions:
       - condition: template
-        value_template: "{{ !input todo_el_dia }}"
+        value_template: "{{ todo_el_dia_value }}"
       - condition: time
         after: !input hora_inicio
         before: !input hora_fin
