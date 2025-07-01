@@ -81,29 +81,35 @@ action:
       - conditions:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
-            below: !input temperatura_minima
-        sequence:
-          - service: "{{ calefaccion_domain }}.turn_on"
-            target:
-              entity_id: "{{ calefaccion_entity }}"
-          - service: "{{ enfriador_domain }}.turn_off"
-            target:
-              entity_id: "{{ enfriador_entity }}"
-      - conditions:
-          - condition: numeric_state
-            entity_id: !input sensor_temperatura
             above: !input temperatura_maxima
         sequence:
           - service: "{{ enfriador_domain }}.turn_on"
             target:
               entity_id: "{{ enfriador_entity }}"
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input sensor_temperatura
+            below: !input temperatura_minima
+        sequence:
+          - service: "{{ enfriador_domain }}.turn_off"
+            target:
+              entity_id: "{{ enfriador_entity }}"
+    default: []
+  - choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input sensor_temperatura
+            below: !input temperatura_minima
+        sequence:
+          - service: "{{ calefaccion_domain }}.turn_on"
+            target:
+              entity_id: "{{ calefaccion_entity }}"
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input sensor_temperatura
+            above: !input temperatura_maxima
+        sequence:
           - service: "{{ calefaccion_domain }}.turn_off"
             target:
               entity_id: "{{ calefaccion_entity }}"
-    default:
-      - service: "{{ calefaccion_domain }}.turn_off"
-        target:
-          entity_id: "{{ calefaccion_entity }}"
-      - service: "{{ enfriador_domain }}.turn_off"
-        target:
-          entity_id: "{{ enfriador_entity }}"
+    default: []
