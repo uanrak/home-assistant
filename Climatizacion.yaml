@@ -1,0 +1,108 @@
+blueprint:
+  name: Control de climatizacion horario
+  description: >
+    Automatiza calefaccion y enfriador segun un rango de temperatura y un horario opcional.
+  domain: automation
+  input:
+    sensor_temperatura:
+      name: Sensor de temperatura
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+    calefaccion:
+      name: Calefaccion
+      description: Entidad a activar para calentar
+      selector:
+        entity:
+          filter:
+            - domain: switch
+            - domain: input_boolean
+    enfriador:
+      name: Enfriador
+      description: Entidad a activar para enfriar
+      selector:
+        entity:
+          filter:
+            - domain: switch
+            - domain: input_boolean
+    temperatura_minima:
+      name: Temperatura minima
+      selector:
+        entity:
+          domain: input_number
+    temperatura_maxima:
+      name: Temperatura maxima
+      selector:
+        entity:
+          domain: input_number
+    hora_inicio:
+      name: Hora de inicio
+      selector:
+        time:
+    hora_fin:
+      name: Hora de fin
+      selector:
+        time:
+    todo_el_dia:
+      name: Clima todo el dia
+      default: false
+      selector:
+        boolean:
+
+mode: restart
+
+trigger:
+  - platform: state
+    entity_id: !input sensor_temperatura
+  - platform: time
+    at: !input hora_inicio
+  - platform: time
+    at: !input hora_fin
+
+variables:
+  calefaccion_entity: !input calefaccion
+  enfriador_entity: !input enfriador
+  calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
+  enfriador_domain: "{{ enfriador_entity.split('.')[0] }}"
+
+condition:
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: "{{ !input todo_el_dia }}"
+      - condition: time
+        after: !input hora_inicio
+        before: !input hora_fin
+
+action:
+  - choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input sensor_temperatura
+            below: !input temperatura_minima
+        sequence:
+          - service: "{{ calefaccion_domain }}.turn_on"
+            target:
+              entity_id: "{{ calefaccion_entity }}"
+          - service: "{{ enfriador_domain }}.turn_off"
+            target:
+              entity_id: "{{ enfriador_entity }}"
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input sensor_temperatura
+            above: !input temperatura_maxima
+        sequence:
+          - service: "{{ enfriador_domain }}.turn_on"
+            target:
+              entity_id: "{{ enfriador_entity }}"
+          - service: "{{ calefaccion_domain }}.turn_off"
+            target:
+              entity_id: "{{ calefaccion_entity }}"
+      - sequence:
+          - service: "{{ calefaccion_domain }}.turn_off"
+            target:
+              entity_id: "{{ calefaccion_entity }}"
+          - service: "{{ enfriador_domain }}.turn_off"
+            target:
+              entity_id: "{{ enfriador_entity }}"
