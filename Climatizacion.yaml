@@ -83,7 +83,7 @@ action:
             entity_id: !input sensor_temperatura
             above: !input temperatura_maxima
           - condition: state
-            entity_id: "{{ enfriador_entity }}"
+            entity_id: !input enfriador
             state: "off"
         sequence:
           - service: "{{ enfriador_domain }}.turn_on"
@@ -94,7 +94,7 @@ action:
             entity_id: !input sensor_temperatura
             below: !input temperatura_minima
           - condition: state
-            entity_id: "{{ enfriador_entity }}"
+            entity_id: !input enfriador
             state: "on"
         sequence:
           - service: "{{ enfriador_domain }}.turn_off"
@@ -107,7 +107,7 @@ action:
             entity_id: !input sensor_temperatura
             below: !input temperatura_minima
           - condition: state
-            entity_id: "{{ calefaccion_entity }}"
+            entity_id: !input calefaccion
             state: "off"
         sequence:
           - service: "{{ calefaccion_domain }}.turn_on"
@@ -118,7 +118,7 @@ action:
             entity_id: !input sensor_temperatura
             above: !input temperatura_maxima
           - condition: state
-            entity_id: "{{ calefaccion_entity }}"
+            entity_id: !input calefaccion
             state: "on"
         sequence:
           - service: "{{ calefaccion_domain }}.turn_off"
