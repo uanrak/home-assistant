@@ -43,6 +43,21 @@ blueprint:
           max: 3600
           unit_of_measurement: segundos
           mode: box
+    smart_plug_sensor:
+      name: "Sensor de enchufe inteligente"
+      description: "Sensor del enchufe que indica si está encendido."
+      selector:
+        entity:
+          domain: sensor
+    activation_threshold:
+      name: "Umbral de activación"
+      description: "Valor del sensor por encima del cual se considera que el enchufe está encendido."
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 10000
+          mode: box
 
 mode: restart
 
@@ -60,9 +75,18 @@ action:
           - variables:
               target_true: !input scene_true
               target_true_domain: "{{ target_true.split('.')[0] }}"
-          - service: "{{ target_true_domain }}.turn_on"
-            target:
-              entity_id: "{{ target_true }}"
+          - repeat:
+              sequence:
+                - service: "{{ target_true_domain }}.turn_on"
+                  target:
+                    entity_id: "{{ target_true }}"
+                - delay:
+                    seconds: 5
+              until:
+                - condition: numeric_state
+                  entity_id: !input smart_plug_sensor
+                  above: !input activation_threshold
+              max: 3
 
       - conditions:
           - condition: state
@@ -73,16 +97,25 @@ action:
           - variables:
               target_false: !input scene_false
               target_false_domain: "{{ target_false.split('.')[0] }}"
-          - choose:
-              - conditions:
-                  - condition: template
-                    value_template: "{{ target_false_domain in ['scene', 'script'] }}"
-                sequence:
-                  - service: "{{ target_false_domain }}.turn_on"
-                    target:
-                      entity_id: "{{ target_false }}"
-            default:
-              - service: "{{ target_false_domain }}.turn_off"
-                target:
-                  entity_id: "{{ target_false }}"
+          - repeat:
+              sequence:
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ target_false_domain in ['scene', 'script'] }}"
+                      sequence:
+                        - service: "{{ target_false_domain }}.turn_on"
+                          target:
+                            entity_id: "{{ target_false }}"
+                  default:
+                    - service: "{{ target_false_domain }}.turn_off"
+                      target:
+                        entity_id: "{{ target_false }}"
+                - delay:
+                    seconds: 5
+              until:
+                - condition: numeric_state
+                  entity_id: !input smart_plug_sensor
+                  below: !input activation_threshold
+              max: 3
 
