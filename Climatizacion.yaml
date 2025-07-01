@@ -61,10 +61,6 @@ trigger:
     at: !input hora_fin
 
 variables:
-  calefaccion_entity: !input calefaccion
-  enfriador_entity: !input enfriador
-  calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
-  enfriador_domain: "{{ enfriador_entity.split('.')[0] }}"
   todo_el_dia_value: !input todo_el_dia
 
 condition:
@@ -86,9 +82,9 @@ action:
             entity_id: !input enfriador
             state: "off"
         sequence:
-          - service: "{{ enfriador_domain }}.turn_on"
+          - service: homeassistant.turn_on
             target:
-              entity_id: "{{ enfriador_entity }}"
+              entity_id: !input enfriador
       - conditions:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
@@ -97,9 +93,9 @@ action:
             entity_id: !input enfriador
             state: "on"
         sequence:
-          - service: "{{ enfriador_domain }}.turn_off"
+          - service: homeassistant.turn_off
             target:
-              entity_id: "{{ enfriador_entity }}"
+              entity_id: !input enfriador
     default: []
   - choose:
       - conditions:
@@ -110,9 +106,9 @@ action:
             entity_id: !input calefaccion
             state: "off"
         sequence:
-          - service: "{{ calefaccion_domain }}.turn_on"
+          - service: homeassistant.turn_on
             target:
-              entity_id: "{{ calefaccion_entity }}"
+              entity_id: !input calefaccion
       - conditions:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
@@ -121,7 +117,7 @@ action:
             entity_id: !input calefaccion
             state: "on"
         sequence:
-          - service: "{{ calefaccion_domain }}.turn_off"
+          - service: homeassistant.turn_off
             target:
-              entity_id: "{{ calefaccion_entity }}"
+              entity_id: !input calefaccion
     default: []
