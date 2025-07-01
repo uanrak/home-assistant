@@ -100,10 +100,4 @@ action:
           - service: "{{ calefaccion_domain }}.turn_off"
             target:
               entity_id: "{{ calefaccion_entity }}"
-    default:
-      - service: "{{ calefaccion_domain }}.turn_off"
-        target:
-          entity_id: "{{ calefaccion_entity }}"
-      - service: "{{ enfriador_domain }}.turn_off"
-        target:
-          entity_id: "{{ enfriador_entity }}"
+    default: []
