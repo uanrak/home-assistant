@@ -82,6 +82,8 @@ action:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
             above: !input temperatura_maxima
+          - condition: template
+            value_template: "{{ is_state(enfriador_entity, 'off') }}"
         sequence:
           - service: "{{ enfriador_domain }}.turn_on"
             target:
@@ -90,6 +92,8 @@ action:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
             below: !input temperatura_minima
+          - condition: template
+            value_template: "{{ is_state(enfriador_entity, 'on') }}"
         sequence:
           - service: "{{ enfriador_domain }}.turn_off"
             target:
@@ -100,6 +104,8 @@ action:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
             below: !input temperatura_minima
+          - condition: template
+            value_template: "{{ is_state(calefaccion_entity, 'off') }}"
         sequence:
           - service: "{{ calefaccion_domain }}.turn_on"
             target:
@@ -108,6 +114,8 @@ action:
           - condition: numeric_state
             entity_id: !input sensor_temperatura
             above: !input temperatura_maxima
+          - condition: template
+            value_template: "{{ is_state(calefaccion_entity, 'on') }}"
         sequence:
           - service: "{{ calefaccion_domain }}.turn_off"
             target:
