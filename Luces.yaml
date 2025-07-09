@@ -14,10 +14,13 @@ blueprint:
 
     luces:
       name: Luces
-      description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      description: "Selecciona las luces, escenas o scripts que se activarán y desactivarán."
       selector:
         entity:
-          domain: light
+          filter:
+            - domain: light
+            - domain: scene
+            - domain: script
           multiple: true
 
     sensores_puerta:
@@ -96,6 +99,7 @@ action:
       sensores_puerta_var: !input sensores_puerta
       umbral_luz_var: !input umbral_luz
       tiempo_apagado_var: !input tiempo_apagado
+      luces_var: !input luces
 
   - choose:
       - conditions:
@@ -106,9 +110,14 @@ action:
               {{ sensores_luz_var | count == 0 or
                  (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - service: "{{ current_domain }}.turn_on"
+                  target:
+                    entity_id: "{{ repeat.item }}"
 
       - conditions:
           - condition: trigger
@@ -117,9 +126,23 @@ action:
             value_template: >
               {{ sensores_presencia_var | map('states') | select('eq', 'off') | list | count == sensores_presencia_var | count }}
         sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ current_domain in ['scene', 'script'] }}"
+                      sequence:
+                        - service: "{{ current_domain }}.turn_on"
+                          target:
+                            entity_id: "{{ repeat.item }}"
+                  default:
+                    - service: "{{ current_domain }}.turn_off"
+                      target:
+                        entity_id: "{{ repeat.item }}"
 
       - conditions:
           - condition: trigger
@@ -132,9 +155,14 @@ action:
               {{ sensores_luz_var | count == 0 or
                  (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - service: "{{ current_domain }}.turn_on"
+                  target:
+                    entity_id: "{{ repeat.item }}"
 
       - conditions:
           - condition: trigger
@@ -145,6 +173,20 @@ action:
               {{ sensores_presencia_var | map('states') | select('eq', 'off') | list | count == sensores_presencia_var | count and
                  ((as_timestamp(now()) - min_last_changed) / 60) >= tiempo_apagado_var }}
         sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ current_domain in ['scene', 'script'] }}"
+                      sequence:
+                        - service: "{{ current_domain }}.turn_on"
+                          target:
+                            entity_id: "{{ repeat.item }}"
+                  default:
+                    - service: "{{ current_domain }}.turn_off"
+                      target:
+                        entity_id: "{{ repeat.item }}"
