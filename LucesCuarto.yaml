@@ -14,11 +14,14 @@ blueprint:
 
     luces:
       name: Luces
-      description: "Selecciona las luces que se encenderán y apagarán automáticamente."
+      description: "Selecciona las luces, escenas o scripts que se activarán y desactivarán."
       default: []
       selector:
         entity:
-          domain: light
+          filter:
+            - domain: light
+            - domain: scene
+            - domain: script
           multiple: true
 
     sensores_puerta:
@@ -111,17 +114,36 @@ action:
               {{ sensores_luz_var | count == 0 or
                  (sensores_luz_var | map('states', 0) | map('float', 0) | min < umbral_luz_var) }}
         sequence:
-          - service: light.turn_on
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - service: "{{ current_domain }}.turn_on"
+                  target:
+                    entity_id: "{{ repeat.item }}"
 
       - conditions:
           - condition: trigger
             id: "sin_presencia"
         sequence:
-          - service: light.turn_off
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ current_domain in ['scene', 'script'] }}"
+                      sequence:
+                        - service: "{{ current_domain }}.turn_on"
+                          target:
+                            entity_id: "{{ repeat.item }}"
+                  default:
+                    - service: "{{ current_domain }}.turn_off"
+                      target:
+                        entity_id: "{{ repeat.item }}"
 
       - conditions:
           - condition: trigger
@@ -130,6 +152,20 @@ action:
             value_template: >
               {{ trigger.event.data.device_id in interruptor_estado_var }}
         sequence:
-          - service: light.toggle
-            target:
-              entity_id: !input luces
+          - repeat:
+              for_each: "{{ luces_var }}"
+              sequence:
+                - variables:
+                    current_domain: "{{ repeat.item.split('.')[0] }}"
+                - choose:
+                    - conditions:
+                        - condition: template
+                          value_template: "{{ current_domain in ['scene', 'script'] }}"
+                      sequence:
+                        - service: "{{ current_domain }}.turn_on"
+                          target:
+                            entity_id: "{{ repeat.item }}"
+                  default:
+                    - service: "{{ current_domain }}.toggle"
+                      target:
+                        entity_id: "{{ repeat.item }}"
