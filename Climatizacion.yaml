@@ -1,7 +1,7 @@
 blueprint:
-  name: Control de climatizacion horario
+  name: Control de climatizacion por presencia
   description: >
-    Automatiza calefaccion y enfriador segun un rango de temperatura y un horario opcional.
+    Automatiza calefaccion y enfriador segun un rango de temperatura cuando se detecta presencia.
   domain: automation
   input:
     sensor_temperatura:
@@ -36,87 +36,108 @@ blueprint:
       selector:
         entity:
           domain: input_number
-    hora_inicio:
-      name: Hora de inicio
+    sensores_presencia:
+      name: Sensores de presencia
+      description: Sensores o grupos que indican si hay alguien presente.
       selector:
-        time:
-    hora_fin:
-      name: Hora de fin
+        entity:
+          filter:
+            - domain: binary_sensor
+          multiple: true
+    tiempo_ausencia:
+      name: Tiempo sin presencia
+      description: Minutos a esperar sin presencia antes de apagar el clima.
+      default: 5
       selector:
-        time:
-    todo_el_dia:
-      name: Clima todo el dia
-      default: false
-      selector:
-        boolean:
+        number:
+          min: 1
+          max: 60
+          unit_of_measurement: "minutos"
 
 mode: restart
 
 trigger:
   - platform: state
     entity_id: !input sensor_temperatura
-  - platform: time
-    at: !input hora_inicio
-  - platform: time
-    at: !input hora_fin
+  - platform: state
+    entity_id: !input sensores_presencia
+    to: "on"
+  - platform: state
+    entity_id: !input sensores_presencia
+    to: "off"
+    for:
+      minutes: !input tiempo_ausencia
 
 variables:
   calefaccion_entity: !input calefaccion
   enfriador_entity: !input enfriador
   calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
   enfriador_domain: "{{ enfriador_entity.split('.')[0] }}"
-  todo_el_dia_value: !input todo_el_dia
+  sensores_presencia_var: !input sensores_presencia
 
-condition:
-  - condition: or
-    conditions:
-      - condition: template
-        value_template: "{{ todo_el_dia_value }}"
-      - condition: time
-        after: !input hora_inicio
-        before: !input hora_fin
+condition: []
 
 action:
+  - variables:
+      hay_presencia: >
+        {{ sensores_presencia_var | select('is_state', 'on') | list | count > 0 }}
+
   - choose:
       - conditions:
-          - condition: numeric_state
-            entity_id: !input sensor_temperatura
-            above: !input temperatura_maxima
           - condition: template
-            value_template: "{{ is_state(enfriador_entity, 'off') }}"
+            value_template: "{{ hay_presencia }}"
         sequence:
-          - service: "{{ enfriador_domain }}.turn_on"
-            target:
-              entity_id: "{{ enfriador_entity }}"
+          - choose:
+              - conditions:
+                  - condition: numeric_state
+                    entity_id: !input sensor_temperatura
+                    above: !input temperatura_maxima
+                  - condition: template
+                    value_template: "{{ is_state(enfriador_entity, 'off') }}"
+                sequence:
+                  - service: "{{ enfriador_domain }}.turn_on"
+                    target:
+                      entity_id: "{{ enfriador_entity }}"
+              - conditions:
+                  - condition: numeric_state
+                    entity_id: !input sensor_temperatura
+                    below: !input temperatura_minima
+                  - condition: template
+                    value_template: "{{ is_state(enfriador_entity, 'on') }}"
+                sequence:
+                  - service: "{{ enfriador_domain }}.turn_off"
+                    target:
+                      entity_id: "{{ enfriador_entity }}"
+            default: []
+          - choose:
+              - conditions:
+                  - condition: numeric_state
+                    entity_id: !input sensor_temperatura
+                    below: !input temperatura_minima
+                  - condition: template
+                    value_template: "{{ is_state(calefaccion_entity, 'off') }}"
+                sequence:
+                  - service: "{{ calefaccion_domain }}.turn_on"
+                    target:
+                      entity_id: "{{ calefaccion_entity }}"
+              - conditions:
+                  - condition: numeric_state
+                    entity_id: !input sensor_temperatura
+                    above: !input temperatura_maxima
+                  - condition: template
+                    value_template: "{{ is_state(calefaccion_entity, 'on') }}"
+                sequence:
+                  - service: "{{ calefaccion_domain }}.turn_off"
+                    target:
+                      entity_id: "{{ calefaccion_entity }}"
+            default: []
       - conditions:
-          - condition: numeric_state
-            entity_id: !input sensor_temperatura
-            below: !input temperatura_minima
           - condition: template
-            value_template: "{{ is_state(enfriador_entity, 'on') }}"
+            value_template: "{{ not hay_presencia }}"
         sequence:
           - service: "{{ enfriador_domain }}.turn_off"
             target:
               entity_id: "{{ enfriador_entity }}"
-    default: []
-  - choose:
-      - conditions:
-          - condition: numeric_state
-            entity_id: !input sensor_temperatura
-            below: !input temperatura_minima
-          - condition: template
-            value_template: "{{ is_state(calefaccion_entity, 'off') }}"
-        sequence:
-          - service: "{{ calefaccion_domain }}.turn_on"
-            target:
-              entity_id: "{{ calefaccion_entity }}"
-      - conditions:
-          - condition: numeric_state
-            entity_id: !input sensor_temperatura
-            above: !input temperatura_maxima
-          - condition: template
-            value_template: "{{ is_state(calefaccion_entity, 'on') }}"
-        sequence:
           - service: "{{ calefaccion_domain }}.turn_off"
             target:
               entity_id: "{{ calefaccion_entity }}"
