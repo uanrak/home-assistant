@@ -1,7 +1,8 @@
 blueprint:
-  name: Control de climatizacion por presencia
+  name: Control de climatizacion por presencia u horario
   description: >
-    Automatiza calefaccion y enfriador segun un rango de temperatura cuando se detecta presencia.
+    Automatiza calefacción y enfriador según un rango de temperatura cuando se detecta presencia
+    o dentro de un horario configurado.
   domain: automation
   input:
     sensor_temperatura:
@@ -53,6 +54,30 @@ blueprint:
           min: 1
           max: 60
           unit_of_measurement: "minutos"
+    controlar_por_presencia:
+      name: Controlar por presencia
+      description: Activa el control cuando se detecta presencia.
+      default: true
+      selector:
+        boolean: {}
+    controlar_por_horario:
+      name: Controlar por horario
+      description: Activa el control dentro de un rango horario.
+      default: false
+      selector:
+        boolean: {}
+    hora_inicio:
+      name: Hora de inicio
+      description: Inicio del rango horario.
+      default: "08:00:00"
+      selector:
+        time: {}
+    hora_fin:
+      name: Hora de fin
+      description: Fin del rango horario.
+      default: "18:00:00"
+      selector:
+        time: {}
 
 mode: restart
 
@@ -67,6 +92,12 @@ trigger:
     to: "off"
     for:
       minutes: !input tiempo_ausencia
+  - platform: time
+    at: !input hora_inicio
+  - platform: time
+    at: !input hora_fin
+  - platform: time_pattern
+    minutes: "/5"
 
 variables:
   calefaccion_entity: !input calefaccion
@@ -74,6 +105,10 @@ variables:
   calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
   enfriador_domain: "{{ enfriador_entity.split('.')[0] }}"
   sensores_presencia_var: !input sensores_presencia
+  controlar_por_presencia_var: !input controlar_por_presencia
+  controlar_por_horario_var: !input controlar_por_horario
+  hora_inicio_var: !input hora_inicio
+  hora_fin_var: !input hora_fin
 
 condition: []
 
@@ -81,59 +116,52 @@ action:
   - variables:
       hay_presencia: >
         {{ sensores_presencia_var | select('is_state', 'on') | list | count > 0 }}
+      dentro_horario: >
+        {% set inicio = hora_inicio_var %}
+        {% set fin = hora_fin_var %}
+        {% set ahora = now().strftime('%H:%M:%S') %}
+        {% if inicio <= fin %}
+          {{ ahora >= inicio and ahora <= fin }}
+        {% else %}
+          {{ ahora >= inicio or ahora <= fin }}
+        {% endif %}
+      control_activo: >
+        {{ (controlar_por_presencia_var and hay_presencia) or (controlar_por_horario_var and dentro_horario) }}
 
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ hay_presencia }}"
+            value_template: "{{ control_activo }}"
         sequence:
           - choose:
               - conditions:
                   - condition: numeric_state
                     entity_id: !input sensor_temperatura
                     above: !input temperatura_maxima
-                  - condition: template
-                    value_template: "{{ is_state(enfriador_entity, 'off') }}"
                 sequence:
                   - service: "{{ enfriador_domain }}.turn_on"
                     target:
                       entity_id: "{{ enfriador_entity }}"
-              - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    below: !input temperatura_minima
-                  - condition: template
-                    value_template: "{{ is_state(enfriador_entity, 'on') }}"
-                sequence:
-                  - service: "{{ enfriador_domain }}.turn_off"
-                    target:
-                      entity_id: "{{ enfriador_entity }}"
-            default: []
+            default:
+              - service: "{{ enfriador_domain }}.turn_off"
+                target:
+                  entity_id: "{{ enfriador_entity }}"
           - choose:
               - conditions:
                   - condition: numeric_state
                     entity_id: !input sensor_temperatura
                     below: !input temperatura_minima
-                  - condition: template
-                    value_template: "{{ is_state(calefaccion_entity, 'off') }}"
                 sequence:
                   - service: "{{ calefaccion_domain }}.turn_on"
                     target:
                       entity_id: "{{ calefaccion_entity }}"
-              - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    above: !input temperatura_maxima
-                  - condition: template
-                    value_template: "{{ is_state(calefaccion_entity, 'on') }}"
-                sequence:
-                  - service: "{{ calefaccion_domain }}.turn_off"
-                    target:
-                      entity_id: "{{ calefaccion_entity }}"
-            default: []
+            default:
+              - service: "{{ calefaccion_domain }}.turn_off"
+                target:
+                  entity_id: "{{ calefaccion_entity }}"
       - conditions:
           - condition: template
-            value_template: "{{ not hay_presencia }}"
+            value_template: "{{ not control_activo }}"
         sequence:
           - service: "{{ enfriador_domain }}.turn_off"
             target:
