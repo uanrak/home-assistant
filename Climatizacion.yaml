@@ -110,8 +110,10 @@ trigger:
 
 variables:
   sensor_temperatura_var: !input sensor_temperatura
-  temperatura_minima_var: "{{ states(!input temperatura_minima) | float(0) }}"
-  temperatura_maxima_var: "{{ states(!input temperatura_maxima) | float(0) }}"
+  temperatura_minima_entity: !input temperatura_minima
+  temperatura_maxima_entity: !input temperatura_maxima
+  temperatura_minima_var: "{{ states(temperatura_minima_entity) | float(0) }}"
+  temperatura_maxima_var: "{{ states(temperatura_maxima_entity) | float(0) }}"
   diferencia_activacion_var: !input diferencia_activacion
   temperatura_minima_activacion: "{{ (temperatura_minima_var | float(0)) + (diferencia_activacion_var | float(0)) }}"
   temperatura_maxima_activacion: "{{ (temperatura_maxima_var | float(0)) - (diferencia_activacion_var | float(0)) }}"
