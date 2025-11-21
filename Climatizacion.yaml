@@ -37,6 +37,16 @@ blueprint:
       selector:
         entity:
           domain: input_number
+    diferencia_activacion:
+      name: Diferencia de activacion
+      description: Diferencia en °C para anticipar la activación respecto a los límites mínimos y máximos.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: "°C"
     sensores_presencia:
       name: Sensores de presencia
       description: Sensores o grupos que indican si hay alguien presente.
