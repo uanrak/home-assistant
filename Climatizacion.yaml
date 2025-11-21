@@ -110,6 +110,13 @@ trigger:
     minutes: "/5"
 
 variables:
+  sensor_temperatura_var: !input sensor_temperatura
+  temperatura_minima_var: "{{ states(!input temperatura_minima) | float(0) }}"
+  temperatura_maxima_var: "{{ states(!input temperatura_maxima) | float(0) }}"
+  diferencia_activacion_var: !input diferencia_activacion
+  temperatura_minima_activacion: "{{ (temperatura_minima_var | float(0)) + (diferencia_activacion_var | float(0)) }}"
+  temperatura_maxima_activacion: "{{ (temperatura_maxima_var | float(0)) - (diferencia_activacion_var | float(0)) }}"
+  temperatura_actual: "{{ states(sensor_temperatura_var) | float(0) }}"
   calefaccion_entity: !input calefaccion
   enfriador_entity: !input enfriador
   calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
@@ -145,9 +152,9 @@ action:
         sequence:
           - choose:
               - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    above: !input temperatura_maxima
+                  - condition: template
+                    value_template: >
+                      {{ temperatura_actual >= temperatura_maxima_activacion }}
                 sequence:
                   - service: "{{ enfriador_domain }}.turn_on"
                     target:
@@ -158,9 +165,9 @@ action:
                   entity_id: "{{ enfriador_entity }}"
           - choose:
               - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    below: !input temperatura_minima
+                  - condition: template
+                    value_template: >
+                      {{ temperatura_actual <= temperatura_minima_activacion }}
                 sequence:
                   - service: "{{ calefaccion_domain }}.turn_on"
                     target:
