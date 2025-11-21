@@ -14,6 +14,7 @@ blueprint:
     calefaccion:
       name: Calefaccion
       description: Entidad a activar para calentar
+      default: []
       selector:
         entity:
           filter:
@@ -22,6 +23,7 @@ blueprint:
     enfriador:
       name: Enfriador
       description: Entidad a activar para enfriar
+      default: []
       selector:
         entity:
           filter:
