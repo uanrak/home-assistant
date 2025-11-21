@@ -37,6 +37,16 @@ blueprint:
       selector:
         entity:
           domain: input_number
+    diferencia_activacion:
+      name: Diferencia de activacion
+      description: Diferencia en °C para anticipar la activación respecto a los límites mínimos y máximos.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 10
+          step: 0.1
+          unit_of_measurement: "°C"
     sensores_presencia:
       name: Sensores de presencia
       description: Sensores o grupos que indican si hay alguien presente.
@@ -78,6 +88,15 @@ blueprint:
       default: "18:00:00"
       selector:
         time: {}
+    retardo_accion:
+      name: Retardo antes de actuar
+      description: Tiempo en segundos a esperar antes de encender o apagar la climatización.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: "segundos"
 
 mode: restart
 
@@ -100,6 +119,14 @@ trigger:
     minutes: "/5"
 
 variables:
+  sensor_temperatura_var: !input sensor_temperatura
+  temperatura_minima_var: "{{ states(!input temperatura_minima) | float(0) }}"
+  temperatura_maxima_var: "{{ states(!input temperatura_maxima) | float(0) }}"
+  diferencia_activacion_var: !input diferencia_activacion
+  temperatura_minima_activacion: "{{ (temperatura_minima_var | float(0)) + (diferencia_activacion_var | float(0)) }}"
+  temperatura_maxima_activacion: "{{ (temperatura_maxima_var | float(0)) - (diferencia_activacion_var | float(0)) }}"
+  retardo_accion_var: !input retardo_accion
+  temperatura_actual: "{{ states(sensor_temperatura_var) | float(0) }}"
   calefaccion_entity: !input calefaccion
   enfriador_entity: !input enfriador
   calefaccion_domain: "{{ calefaccion_entity.split('.')[0] }}"
@@ -135,38 +162,43 @@ action:
         sequence:
           - choose:
               - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    above: !input temperatura_maxima
+                  - condition: template
+                    value_template: >
+                      {{ temperatura_actual >= temperatura_maxima_activacion }}
                 sequence:
+                  - delay: "{{ retardo_accion_var | int(0) }}"
                   - service: "{{ enfriador_domain }}.turn_on"
                     target:
                       entity_id: "{{ enfriador_entity }}"
             default:
+              - delay: "{{ retardo_accion_var | int(0) }}"
               - service: "{{ enfriador_domain }}.turn_off"
                 target:
                   entity_id: "{{ enfriador_entity }}"
           - choose:
               - conditions:
-                  - condition: numeric_state
-                    entity_id: !input sensor_temperatura
-                    below: !input temperatura_minima
+                  - condition: template
+                    value_template: >
+                      {{ temperatura_actual <= temperatura_minima_activacion }}
                 sequence:
+                  - delay: "{{ retardo_accion_var | int(0) }}"
                   - service: "{{ calefaccion_domain }}.turn_on"
                     target:
                       entity_id: "{{ calefaccion_entity }}"
             default:
+              - delay: "{{ retardo_accion_var | int(0) }}"
               - service: "{{ calefaccion_domain }}.turn_off"
                 target:
                   entity_id: "{{ calefaccion_entity }}"
-      - conditions:
-          - condition: template
-            value_template: "{{ not control_activo }}"
-        sequence:
-          - service: "{{ enfriador_domain }}.turn_off"
-            target:
-              entity_id: "{{ enfriador_entity }}"
-          - service: "{{ calefaccion_domain }}.turn_off"
-            target:
+        - conditions:
+            - condition: template
+              value_template: "{{ not control_activo }}"
+          sequence:
+            - delay: "{{ retardo_accion_var | int(0) }}"
+            - service: "{{ enfriador_domain }}.turn_off"
+              target:
+                entity_id: "{{ enfriador_entity }}"
+            - service: "{{ calefaccion_domain }}.turn_off"
+              target:
               entity_id: "{{ calefaccion_entity }}"
     default: []
