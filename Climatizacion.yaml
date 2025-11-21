@@ -54,9 +54,9 @@ blueprint:
           filter:
             - domain: binary_sensor
           multiple: true
-    tiempo_ausencia:
-      name: Tiempo sin presencia
-      description: Minutos a esperar sin presencia antes de apagar el clima.
+    retraso_accion:
+      name: Retraso en la acción
+      description: Minutos a esperar antes de activar o desactivar el clima por presencia.
       default: 5
       selector:
         number:
@@ -96,11 +96,13 @@ trigger:
   - platform: state
     entity_id: !input sensores_presencia
     to: "on"
+    for:
+      minutes: !input retraso_accion
   - platform: state
     entity_id: !input sensores_presencia
     to: "off"
     for:
-      minutes: !input tiempo_ausencia
+      minutes: !input retraso_accion
   - platform: time
     at: !input hora_inicio
   - platform: time
